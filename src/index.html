@@ -12,128 +12,266 @@
       <aside class="sidebar">
         <div class="sidebar-header">
           <div class="sidebar-brand">
-            <svg
-              class="brand-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
+            <div class="brand-logo">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+            </div>
+            <div class="brand-text">
+              <span class="brand-name">YT Downloader</span>
+              <span class="brand-version">v1.0.0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <nav class="sidebar-nav">
+          <button class="nav-tab active" data-tab="all">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7" />
+              <rect x="14" y="3" width="7" height="7" />
+              <rect x="3" y="14" width="7" height="7" />
+              <rect x="14" y="14" width="7" height="7" />
+            </svg>
+            <span>All</span>
+            <span class="nav-count" id="countAll">0</span>
+          </button>
+          <button class="nav-tab" data-tab="active">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
               <polyline points="7 10 12 15 17 10" />
               <line x1="12" y1="15" x2="12" y2="3" />
             </svg>
-            <span>YT Downloader</span>
+            <span>Active</span>
+            <span class="nav-count" id="countActive">0</span>
+          </button>
+          <button class="nav-tab" data-tab="queued">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="8" y1="6" x2="21" y2="6" />
+              <line x1="8" y1="12" x2="21" y2="12" />
+              <line x1="8" y1="18" x2="21" y2="18" />
+              <line x1="3" y1="6" x2="3.01" y2="6" />
+              <line x1="3" y1="12" x2="3.01" y2="12" />
+              <line x1="3" y1="18" x2="3.01" y2="18" />
+            </svg>
+            <span>Queue</span>
+            <span class="nav-count" id="countQueued">0</span>
+          </button>
+          <button class="nav-tab" data-tab="completed">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            <span>Completed</span>
+            <span class="nav-count" id="countCompleted">0</span>
+          </button>
+        </nav>
+
+        <!-- Sidebar download list -->
+        <div class="sidebar-list-wrap">
+          <div id="sidebarList" class="sidebar-list">
+            <div class="sidebar-empty">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              <span>No downloads yet</span>
+            </div>
           </div>
         </div>
 
-        <div class="sidebar-section sidebar-section-grow">
-          <div class="sidebar-section-header">
-            <span>History</span>
-            <button class="text-btn" id="clearHistoryButton" type="button">Clear</button>
-          </div>
-          <div id="sidebarHistory" class="sidebar-list">
-            <div class="sidebar-empty">Downloads will appear here</div>
-          </div>
-        </div>
-
+        <!-- Sidebar Footer -->
         <div class="sidebar-footer">
+          <div class="sidebar-actions">
+            <button class="sidebar-action-btn" id="clearHistoryButton" title="Clear history">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              </svg>
+            </button>
+          </div>
           <div class="tool-status">
-            <span class="status-dot" id="ytdlpDot"></span>
-            <span class="tool-label">yt-dlp</span>
-            <span class="status-dot" id="ffmpegDot"></span>
-            <span class="tool-label">ffmpeg</span>
+            <span class="tool-pill" id="ytdlpPill">
+              <span class="tool-dot" id="ytdlpDot"></span>
+              yt-dlp
+            </span>
+            <span class="tool-pill" id="ffmpegPill">
+              <span class="tool-dot" id="ffmpegDot"></span>
+              ffmpeg
+            </span>
           </div>
         </div>
       </aside>
 
       <!-- Main Content -->
       <main class="workspace">
-        <div class="workspace-scroll">
-          <!-- Flash Message -->
-          <div id="flashMessage" class="flash hidden"></div>
-
-          <!-- URL Input — always visible, centered at top -->
-          <div class="url-section">
-            <form id="analyzeForm" class="url-bar">
-              <div class="url-bar-icon">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+        <!-- Top Action Bar -->
+        <header class="action-bar">
+          <form id="analyzeForm" class="url-bar">
+            <div class="url-bar-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+              </svg>
+            </div>
+            <input
+              id="urlInput"
+              type="url"
+              class="url-input"
+              placeholder="Paste a YouTube URL and press Enter..."
+              required
+            />
+            <div class="url-bar-actions">
+              <button class="url-paste-btn" type="button" id="pasteButton" title="Paste from clipboard">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                  <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
                 </svg>
-              </div>
-              <input id="urlInput" type="url" class="url-input" placeholder="Paste a YouTube URL here..." required />
-              <button class="url-btn" type="submit" id="analyzeButton">Analyze</button>
-            </form>
-          </div>
+              </button>
+              <button class="url-analyze-btn" type="submit" id="analyzeButton">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <span>Analyze</span>
+              </button>
+            </div>
+          </form>
+        </header>
 
-          <!-- Empty State — shown before analysis -->
-          <div id="emptyState" class="empty-hero">
-            <div class="empty-icon-wrap">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+        <!-- Flash Message -->
+        <div id="flashMessage" class="flash hidden"></div>
+
+        <!-- Content Area -->
+        <div class="content-scroll">
+          <!-- Empty State -->
+          <div id="emptyState" class="empty-state">
+            <div class="empty-graphic">
+              <div class="empty-circle empty-circle-outer"></div>
+              <div class="empty-circle empty-circle-inner"></div>
+              <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                 <polyline points="7 10 12 15 17 10" />
                 <line x1="12" y1="15" x2="12" y2="3" />
               </svg>
             </div>
-            <h2>Download YouTube Videos</h2>
-            <p>Paste a link above to get started. Choose your format, quality, and save location.</p>
+            <h2 class="empty-title">Ready to Download</h2>
+            <p class="empty-subtitle">
+              Paste a YouTube URL above to analyze and download videos in any format and quality.
+            </p>
+            <div class="empty-features">
+              <div class="empty-feature">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="23 7 16 12 23 17 23 7" />
+                  <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+                </svg>
+                <span>MP4 &amp; WEBM Video</span>
+              </div>
+              <div class="empty-feature">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 18V5l12-2v13" />
+                  <circle cx="6" cy="18" r="3" />
+                  <circle cx="18" cy="16" r="3" />
+                </svg>
+                <span>MP3 &amp; WAV Audio</span>
+              </div>
+              <div class="empty-feature">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="8" y1="6" x2="21" y2="6" />
+                  <line x1="8" y1="12" x2="21" y2="12" />
+                  <line x1="8" y1="18" x2="21" y2="18" />
+                  <line x1="3" y1="6" x2="3.01" y2="6" />
+                  <line x1="3" y1="12" x2="3.01" y2="12" />
+                  <line x1="3" y1="18" x2="3.01" y2="18" />
+                </svg>
+                <span>Queue &amp; Batch</span>
+              </div>
+            </div>
           </div>
 
-          <!-- Video Card — revealed after analysis, contains EVERYTHING -->
+          <!-- Video Preview Card (shown after analysis) -->
           <div id="videoCard" class="video-card" style="display: none">
-            <div class="video-card-media">
-              <div id="videoThumb" class="video-thumb"></div>
+            <div class="vc-media">
+              <div id="videoThumb" class="vc-thumb"></div>
+              <span id="videoDuration" class="vc-duration">0:00</span>
             </div>
-            <div class="video-card-body">
-              <div class="video-meta">
-                <h3 id="videoTitle" class="video-title"></h3>
-                <p id="videoUploader" class="video-uploader"></p>
-                <div class="video-badges">
-                  <span id="videoDuration" class="video-badge"></span>
-                </div>
+            <div class="vc-body">
+              <div class="vc-info">
+                <h3 id="videoTitle" class="vc-title"></h3>
+                <p id="videoUploader" class="vc-channel"></p>
               </div>
-              <div class="video-config">
-                <div class="config-row">
-                  <label class="config-field">
-                    <span class="config-label">Format</span>
-                    <select id="formatSelect" class="config-select">
-                      <option value="mp4">MP4 Video</option>
-                      <option value="webm">WEBM Video</option>
-                      <option value="mp3">MP3 Audio</option>
-                      <option value="wav">WAV Audio</option>
-                    </select>
-                  </label>
-                  <label class="config-field">
-                    <span class="config-label">Quality</span>
-                    <select id="qualitySelect" class="config-select"></select>
-                  </label>
-                </div>
-                <label class="config-field">
-                  <span class="config-label">Save to</span>
-                  <div class="path-input-row">
-                    <input
-                      id="savePathInput"
-                      type="text"
-                      class="config-path"
-                      placeholder="Click Browse or just hit Download..."
-                      readonly
-                    />
-                    <button class="path-browse-btn" type="button" id="browseButton">Browse</button>
+              <div class="vc-options">
+                <div class="vc-option-group">
+                  <label class="vc-label">Format</label>
+                  <div class="format-chips" id="formatChips">
+                    <button class="format-chip active" data-format="mp4" type="button">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="23 7 16 12 23 17 23 7" />
+                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+                      </svg>
+                      MP4
+                    </button>
+                    <button class="format-chip" data-format="webm" type="button">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="23 7 16 12 23 17 23 7" />
+                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+                      </svg>
+                      WEBM
+                    </button>
+                    <button class="format-chip" data-format="mp3" type="button">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 18V5l12-2v13" />
+                        <circle cx="6" cy="18" r="3" />
+                        <circle cx="18" cy="16" r="3" />
+                      </svg>
+                      MP3
+                    </button>
+                    <button class="format-chip" data-format="wav" type="button">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 18V5l12-2v13" />
+                        <circle cx="6" cy="18" r="3" />
+                        <circle cx="18" cy="16" r="3" />
+                      </svg>
+                      WAV
+                    </button>
                   </div>
-                </label>
+                </div>
+                <div class="vc-option-row">
+                  <div class="vc-option-group vc-option-flex">
+                    <label class="vc-label">Quality</label>
+                    <select id="qualitySelect" class="vc-select"></select>
+                  </div>
+                  <div class="vc-option-group vc-option-flex">
+                    <label class="vc-label">Save to</label>
+                    <div class="vc-path-row">
+                      <input id="savePathInput" type="text" class="vc-path" placeholder="Choose location..." readonly />
+                      <button class="vc-browse-btn" type="button" id="browseButton">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <form id="downloadForm" class="video-action">
-                <button class="download-btn" type="submit" id="downloadButton">
+              <div class="vc-actions">
+                <button class="btn-download" type="button" id="downloadButton">
                   <svg
                     viewBox="0 0 24 24"
                     fill="none"
@@ -141,46 +279,79 @@
                     stroke-width="2.5"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    class="download-btn-icon"
                   >
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                     <polyline points="7 10 12 15 17 10" />
                     <line x1="12" y1="15" x2="12" y2="3" />
                   </svg>
-                  Download
+                  Download Now
                 </button>
-                <button class="queue-link" type="button" id="queueButton">or add to queue</button>
-              </form>
+                <button class="btn-queue" type="button" id="queueButton">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                  Add to Queue
+                </button>
+              </div>
             </div>
           </div>
 
-          <!-- Active Downloads -->
+          <!-- Active Downloads Section -->
           <div id="activeSection" style="display: none">
-            <div class="active-header">
-              <h3 class="active-title">Downloading</h3>
+            <div class="section-header">
+              <h3 class="section-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                Active Downloads
+              </h3>
             </div>
-            <div id="activeDownloads" class="active-list"></div>
+            <div id="activeDownloads" class="download-list"></div>
           </div>
 
-          <!-- Queue (only shown when items exist) -->
+          <!-- Queue Section -->
           <div id="queueSection" style="display: none">
-            <div class="active-header">
-              <h3 class="active-title">Queue</h3>
-              <button class="btn-text-action" id="startAllQueuedButton" type="button">Start All</button>
+            <div class="section-header">
+              <h3 class="section-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="8" y1="6" x2="21" y2="6" />
+                  <line x1="8" y1="12" x2="21" y2="12" />
+                  <line x1="8" y1="18" x2="21" y2="18" />
+                  <line x1="3" y1="6" x2="3.01" y2="6" />
+                  <line x1="3" y1="12" x2="3.01" y2="12" />
+                  <line x1="3" y1="18" x2="3.01" y2="18" />
+                </svg>
+                Download Queue
+              </h3>
+              <button class="btn-start-all" id="startAllQueuedButton" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                Start All
+              </button>
             </div>
-            <div id="queuedDownloads" class="active-list"></div>
+            <div id="queuedDownloads" class="download-list"></div>
           </div>
         </div>
 
         <!-- Status Bar -->
         <footer class="status-bar">
-          <span class="status-bar-item" id="statusBarVersion">v1.0.0</span>
-          <span class="status-bar-sep"></span>
-          <span class="status-bar-item" id="statusBarDownloads">0 active</span>
-          <span class="status-bar-sep"></span>
-          <span class="status-bar-item" id="statusBarQueue">Queue: 0</span>
-          <span class="status-bar-sep"></span>
-          <span class="status-bar-item" id="statusBarHistory">History: 0</span>
+          <div class="status-left">
+            <span class="status-item" id="statusBarDownloads">
+              <span class="status-dot-live"></span>
+              0 active
+            </span>
+            <span class="status-sep"></span>
+            <span class="status-item" id="statusBarQueue">Queue: 0</span>
+            <span class="status-sep"></span>
+            <span class="status-item" id="statusBarHistory">History: 0</span>
+          </div>
+          <div class="status-right">
+            <span class="status-item" id="statusBarVersion">v1.0.0</span>
+          </div>
         </footer>
       </main>
     </div>

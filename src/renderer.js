@@ -5,7 +5,9 @@ const state = {
   pendingDownloads: [],
   history: [],
   currentSavePath: "",
-  automation: null
+  automation: null,
+  activeTab: "all",
+  selectedFormat: "mp4"
 };
 
 const refs = {};
@@ -83,45 +85,122 @@ function clearFlashMessage() {
 
 function renderToolStatus() {
   if (!state.tools) return;
-  refs.ytdlpDot.className = `status-dot ${state.tools.ytDlpAvailable ? "available" : "unavailable"}`;
-  refs.ffmpegDot.className = `status-dot ${state.tools.ffmpegAvailable ? "available" : "unavailable"}`;
+  refs.ytdlpDot.className = `tool-dot ${state.tools.ytDlpAvailable ? "available" : "unavailable"}`;
+  refs.ffmpegDot.className = `tool-dot ${state.tools.ffmpegAvailable ? "available" : "unavailable"}`;
 }
 
-/* ---- Status bar ---- */
+/* ---- Tab counts ---- */
 
-function updateStatusBar() {
-  refs.statusBarDownloads.textContent = `${state.activeDownloads.size} active`;
-  refs.statusBarQueue.textContent = `Queue: ${state.pendingDownloads.length}`;
+function updateCounts() {
+  const activeCount = state.activeDownloads.size;
+  const queuedCount = state.pendingDownloads.length;
+  const completedCount = state.history.filter((e) => e.status === "completed").length;
+  const totalCount = activeCount + queuedCount + state.history.length;
+
+  refs.countAll.textContent = totalCount;
+  refs.countActive.textContent = activeCount;
+  refs.countQueued.textContent = queuedCount;
+  refs.countCompleted.textContent = completedCount;
+
+  refs.statusBarDownloads.innerHTML = `<span class="status-dot-live"></span> ${activeCount} active`;
+  refs.statusBarQueue.textContent = `Queue: ${queuedCount}`;
   refs.statusBarHistory.textContent = `History: ${state.history.length}`;
 }
 
-/* ---- Sidebar history ---- */
+/* ---- Sidebar list ---- */
 
-function statusIcon(status) {
-  if (status === "completed") {
-    return '<svg class="sidebar-item-icon completed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+function buildSidebarItems() {
+  const items = [];
+
+  // Active downloads
+  for (const task of state.activeDownloads.values()) {
+    items.push({
+      id: task.id,
+      title: task.title,
+      format: task.format,
+      quality: task.quality,
+      status: task.status || "downloading",
+      thumbnail: task.thumbnail || "",
+      time: "",
+      type: "active",
+      path: ""
+    });
   }
-  if (status === "failed") {
-    return '<svg class="sidebar-item-icon failed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+
+  // Queued
+  for (const entry of state.pendingDownloads) {
+    items.push({
+      id: entry.id,
+      title: entry.title,
+      format: entry.format,
+      quality: entry.quality,
+      status: "queued",
+      thumbnail: entry.thumbnail || "",
+      time: "",
+      type: "queued",
+      path: ""
+    });
   }
-  return '<svg class="sidebar-item-icon cancelled" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>';
+
+  // History
+  for (const entry of state.history) {
+    items.push({
+      id: entry.id,
+      title: entry.title,
+      format: entry.format,
+      quality: entry.quality,
+      status: entry.status,
+      thumbnail: entry.thumbnail || "",
+      time: timeAgo(entry.completedAt),
+      type: "history",
+      path: entry.outputPath || entry.savePath
+    });
+  }
+
+  return items;
 }
 
-function renderSidebarHistory() {
-  if (state.history.length === 0) {
-    refs.sidebarHistory.innerHTML = '<div class="sidebar-empty">Downloads will appear here</div>';
+function filterByTab(items) {
+  switch (state.activeTab) {
+    case "active":
+      return items.filter((i) => i.type === "active");
+    case "queued":
+      return items.filter((i) => i.type === "queued");
+    case "completed":
+      return items.filter((i) => i.status === "completed");
+    default:
+      return items;
+  }
+}
+
+function renderSidebarList() {
+  const items = filterByTab(buildSidebarItems());
+
+  if (items.length === 0) {
+    const labels = {
+      all: "No downloads yet",
+      active: "No active downloads",
+      queued: "No queued items",
+      completed: "No completed downloads"
+    };
+    refs.sidebarList.innerHTML = `
+      <div class="sidebar-empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span>${escapeHtml(labels[state.activeTab] || labels.all)}</span>
+      </div>`;
     return;
   }
-  refs.sidebarHistory.innerHTML = state.history
+
+  refs.sidebarList.innerHTML = items
     .map(
-      (e) => `
-    <div class="sidebar-item" data-history-path="${escapeHtml(e.outputPath || e.savePath)}" data-history-status="${escapeHtml(e.status)}">
-      ${statusIcon(e.status)}
-      <div class="sidebar-item-content">
-        <div class="sidebar-item-title">${escapeHtml(e.title)}</div>
-        <div class="sidebar-item-meta">${escapeHtml(e.format.toUpperCase())} · ${escapeHtml(getFileSizeLabel(e.fileSize || 0))}</div>
+      (item) => `
+    <div class="sidebar-item" data-sidebar-id="${escapeHtml(item.id)}" data-sidebar-type="${escapeHtml(item.type)}" data-sidebar-path="${escapeHtml(item.path)}" data-sidebar-status="${escapeHtml(item.status)}">
+      <div class="sidebar-item-thumb">${item.thumbnail ? `<img src="${escapeHtml(item.thumbnail)}" alt="" />` : ""}</div>
+      <div class="sidebar-item-info">
+        <div class="sidebar-item-title">${escapeHtml(item.title)}</div>
+        <div class="sidebar-item-meta">${escapeHtml(item.format.toUpperCase())}${item.time ? ` · ${escapeHtml(item.time)}` : ""}</div>
       </div>
-      <span class="sidebar-item-time">${escapeHtml(timeAgo(e.completedAt))}</span>
+      <div class="sidebar-item-status ${escapeHtml(item.status)}"></div>
     </div>`
     )
     .join("");
@@ -148,6 +227,18 @@ function renderVideoCard() {
   refs.videoDuration.textContent = getDurationLabel(meta.duration);
 }
 
+/* ---- Format chips ---- */
+
+function setActiveFormat(format) {
+  state.selectedFormat = format;
+  for (const chip of refs.formatChips.children) {
+    chip.classList.toggle("active", chip.getAttribute("data-format") === format);
+  }
+  renderQualityOptions();
+  state.currentSavePath = "";
+  refs.savePathInput.value = "";
+}
+
 /* ---- Quality options ---- */
 
 function getQualityOptionsForFormat(format) {
@@ -158,7 +249,7 @@ function getQualityOptionsForFormat(format) {
 }
 
 function renderQualityOptions() {
-  const options = getQualityOptionsForFormat(refs.formatSelect.value);
+  const options = getQualityOptionsForFormat(state.selectedFormat);
   refs.qualitySelect.innerHTML = options
     .map((o) => `<option value="${escapeHtml(o.value)}">${escapeHtml(o.label)}</option>`)
     .join("");
@@ -170,7 +261,8 @@ function renderActiveDownloads() {
   const tasks = [...state.activeDownloads.values()];
   if (tasks.length === 0) {
     refs.activeSection.style.display = "none";
-    updateStatusBar();
+    updateCounts();
+    renderSidebarList();
     return;
   }
 
@@ -179,25 +271,28 @@ function renderActiveDownloads() {
     .map(
       (t) => `
     <div class="dl-card">
-      <div class="dl-card-header">
-        <div class="dl-card-title">${escapeHtml(t.title)}</div>
-        <div class="dl-card-actions">
-          <span class="tag tag-${escapeHtml(t.status)}">${escapeHtml(t.status)}</span>
-          <button class="cancel-btn" type="button" data-cancel-id="${escapeHtml(t.id)}">Cancel</button>
+      <div class="dl-content">
+        <div class="dl-top-row">
+          <div class="dl-title">${escapeHtml(t.title)}</div>
+          <div class="dl-actions">
+            <span class="dl-tag dl-tag-${escapeHtml(t.status)}">${escapeHtml(t.status)}</span>
+            <button class="dl-cancel-btn" type="button" data-cancel-id="${escapeHtml(t.id)}">Cancel</button>
+          </div>
         </div>
-      </div>
-      <div class="dl-card-subtitle">${escapeHtml(t.format.toUpperCase())} · ${escapeHtml(t.quality === "best" ? "Best" : t.quality)}</div>
-      <div class="progress-track"><div class="progress-bar" style="width:${Math.max(0, Math.min(100, t.percent || 0))}%"></div></div>
-      <div class="progress-stats">
-        <span><span class="progress-val">${Math.round(t.percent || 0)}%</span></span>
-        <span><span class="progress-val">${escapeHtml(getSpeedLabel(t.speed))}</span></span>
-        <span>ETA <span class="progress-val">${escapeHtml(getEtaLabel(t.eta))}</span></span>
-        <span><span class="progress-val">${escapeHtml(getFileSizeLabel(t.downloadedBytes || 0))}</span> / ${escapeHtml(getFileSizeLabel(t.totalBytes || 0))}</span>
+        <div class="dl-format-tag">${escapeHtml(t.format.toUpperCase())} · ${escapeHtml(t.quality === "best" ? "Best" : t.quality)}</div>
+        <div class="dl-progress-track"><div class="dl-progress-bar" style="width:${Math.max(0, Math.min(100, t.percent || 0))}%"></div></div>
+        <div class="dl-stats">
+          <span><span class="dl-stat-val">${Math.round(t.percent || 0)}%</span></span>
+          <span><span class="dl-stat-val">${escapeHtml(getSpeedLabel(t.speed))}</span></span>
+          <span>ETA <span class="dl-stat-val">${escapeHtml(getEtaLabel(t.eta))}</span></span>
+          <span><span class="dl-stat-val">${escapeHtml(getFileSizeLabel(t.downloadedBytes || 0))}</span> / ${escapeHtml(getFileSizeLabel(t.totalBytes || 0))}</span>
+        </div>
       </div>
     </div>`
     )
     .join("");
-  updateStatusBar();
+  updateCounts();
+  renderSidebarList();
 }
 
 /* ---- Queue ---- */
@@ -206,7 +301,8 @@ function renderPendingDownloads() {
   if (state.pendingDownloads.length === 0) {
     refs.queueSection.style.display = "none";
     refs.startAllQueuedButton.disabled = true;
-    updateStatusBar();
+    updateCounts();
+    renderSidebarList();
     return;
   }
 
@@ -227,12 +323,13 @@ function renderPendingDownloads() {
     </div>`
     )
     .join("");
-  updateStatusBar();
+  updateCounts();
+  renderSidebarList();
 }
 
 function renderHistory() {
-  renderSidebarHistory();
-  updateStatusBar();
+  renderSidebarList();
+  updateCounts();
 }
 
 function syncDownloadButton() {
@@ -252,7 +349,7 @@ function applyBootstrap(payload) {
 async function runAutomationIfConfigured() {
   if (!state.automation || !state.automation.url || !state.automation.savePath) return;
   refs.urlInput.value = state.automation.url;
-  refs.formatSelect.value = state.automation.format;
+  setActiveFormat(state.automation.format);
   renderQualityOptions();
   try {
     const metadata = await window.youtubeDownloader.inspectUrl(state.automation.url);
@@ -271,7 +368,7 @@ async function runAutomationIfConfigured() {
     await window.youtubeDownloader.startDownload({
       url: state.automation.url,
       title: state.metadata.title,
-      format: refs.formatSelect.value,
+      format: state.selectedFormat,
       quality: refs.qualitySelect.value,
       savePath: state.currentSavePath
     });
@@ -297,7 +394,7 @@ async function handleAnalyze(event) {
   }
 
   refs.analyzeButton.disabled = true;
-  refs.analyzeButton.textContent = "Analyzing...";
+  refs.analyzeButton.querySelector("span").textContent = "Analyzing...";
 
   try {
     const metadata = await window.youtubeDownloader.inspectUrl(url);
@@ -312,7 +409,21 @@ async function handleAnalyze(event) {
     setFlashMessage(error.message || "Could not analyze this link.", "error");
   } finally {
     refs.analyzeButton.disabled = false;
-    refs.analyzeButton.textContent = "Analyze";
+    refs.analyzeButton.querySelector("span").textContent = "Analyze";
+  }
+}
+
+async function handlePaste() {
+  try {
+    const text = await navigator.clipboard.readText();
+    if (text && (text.includes("youtube.com") || text.includes("youtu.be"))) {
+      refs.urlInput.value = text;
+      refs.analyzeForm.dispatchEvent(new Event("submit", { cancelable: true }));
+    } else if (text) {
+      refs.urlInput.value = text;
+    }
+  } catch {
+    /* clipboard access denied — ignore */
   }
 }
 
@@ -323,7 +434,7 @@ async function chooseSavePath() {
   }
   const response = await window.youtubeDownloader.browseSavePath({
     suggestedFilename: state.metadata.suggestedFilename,
-    format: refs.formatSelect.value
+    format: state.selectedFormat
   });
   if (!response) return;
   state.currentSavePath = response.filePath;
@@ -343,7 +454,8 @@ function buildCurrentDownloadEntry() {
     id: crypto.randomUUID(),
     url: refs.urlInput.value.trim(),
     title: state.metadata.title,
-    format: refs.formatSelect.value,
+    thumbnail: state.metadata.thumbnail || "",
+    format: state.selectedFormat,
     quality: refs.qualitySelect.value,
     savePath: state.currentSavePath
   };
@@ -364,8 +476,7 @@ async function startPendingEntry(entry) {
   });
 }
 
-async function handleDownload(event) {
-  event.preventDefault();
+async function handleDownload() {
   clearFlashMessage();
   if (!state.metadata) {
     setFlashMessage("Analyze a video first.", "error");
@@ -375,6 +486,7 @@ async function handleDownload(event) {
   if (!hasSavePath) return;
 
   refs.downloadButton.disabled = true;
+  const originalHTML = refs.downloadButton.innerHTML;
   refs.downloadButton.textContent = "Starting...";
 
   try {
@@ -385,8 +497,7 @@ async function handleDownload(event) {
     setFlashMessage(error.message || "Could not start the download.", "error");
   } finally {
     syncDownloadButton();
-    refs.downloadButton.innerHTML =
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="download-btn-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download';
+    refs.downloadButton.innerHTML = originalHTML;
   }
 }
 
@@ -410,11 +521,15 @@ async function handleCancelClick(event) {
   await window.youtubeDownloader.cancelDownload(button.getAttribute("data-cancel-id"));
 }
 
-async function handleHistoryClick(event) {
-  const item = event.target.closest("[data-history-path]");
+async function handleSidebarClick(event) {
+  const item = event.target.closest("[data-sidebar-id]");
   if (!item) return;
-  if (item.getAttribute("data-history-status") === "completed") {
-    await window.youtubeDownloader.openFolder(item.getAttribute("data-history-path"));
+  const type = item.getAttribute("data-sidebar-type");
+  const status = item.getAttribute("data-sidebar-status");
+  const itemPath = item.getAttribute("data-sidebar-path");
+
+  if (type === "history" && status === "completed" && itemPath) {
+    await window.youtubeDownloader.openFolder(itemPath);
   }
 }
 
@@ -422,6 +537,22 @@ async function handleClearHistory() {
   await window.youtubeDownloader.clearHistory();
   state.history = [];
   renderHistory();
+}
+
+function handleTabClick(event) {
+  const tab = event.target.closest("[data-tab]");
+  if (!tab) return;
+  state.activeTab = tab.getAttribute("data-tab");
+  for (const t of refs.sidebarNav.querySelectorAll(".nav-tab")) {
+    t.classList.toggle("active", t.getAttribute("data-tab") === state.activeTab);
+  }
+  renderSidebarList();
+}
+
+function handleFormatChipClick(event) {
+  const chip = event.target.closest("[data-format]");
+  if (!chip) return;
+  setActiveFormat(chip.getAttribute("data-format"));
 }
 
 async function handleQueuedClick(event) {
@@ -450,6 +581,7 @@ async function handleQueuedClick(event) {
 async function handleStartAllQueued() {
   if (state.pendingDownloads.length === 0) return;
   refs.startAllQueuedButton.disabled = true;
+  const originalHTML = refs.startAllQueuedButton.innerHTML;
   refs.startAllQueuedButton.textContent = "Starting...";
   const entries = [...state.pendingDownloads];
   const results = await Promise.allSettled(entries.map((e) => startPendingEntry(e)));
@@ -459,7 +591,7 @@ async function handleStartAllQueued() {
   });
   state.pendingDownloads = state.pendingDownloads.filter((e) => failedIds.has(e.id));
   renderPendingDownloads();
-  refs.startAllQueuedButton.textContent = "Start All";
+  refs.startAllQueuedButton.innerHTML = originalHTML;
   if (failedIds.size > 0) {
     setFlashMessage("Some downloads failed to start.", "error");
   } else {
@@ -495,10 +627,10 @@ function handleDownloadEvent(payload) {
 
 function wireRefs() {
   refs.analyzeForm = document.getElementById("analyzeForm");
-  refs.downloadForm = document.getElementById("downloadForm");
   refs.urlInput = document.getElementById("urlInput");
   refs.analyzeButton = document.getElementById("analyzeButton");
-  refs.formatSelect = document.getElementById("formatSelect");
+  refs.pasteButton = document.getElementById("pasteButton");
+  refs.formatChips = document.getElementById("formatChips");
   refs.qualitySelect = document.getElementById("qualitySelect");
   refs.savePathInput = document.getElementById("savePathInput");
   refs.browseButton = document.getElementById("browseButton");
@@ -517,12 +649,17 @@ function wireRefs() {
   refs.queuedDownloads = document.getElementById("queuedDownloads");
   refs.startAllQueuedButton = document.getElementById("startAllQueuedButton");
   refs.clearHistoryButton = document.getElementById("clearHistoryButton");
-  refs.sidebarHistory = document.getElementById("sidebarHistory");
+  refs.sidebarList = document.getElementById("sidebarList");
+  refs.sidebarNav = document.querySelector(".sidebar-nav");
   refs.ytdlpDot = document.getElementById("ytdlpDot");
   refs.ffmpegDot = document.getElementById("ffmpegDot");
   refs.statusBarDownloads = document.getElementById("statusBarDownloads");
   refs.statusBarQueue = document.getElementById("statusBarQueue");
   refs.statusBarHistory = document.getElementById("statusBarHistory");
+  refs.countAll = document.getElementById("countAll");
+  refs.countActive = document.getElementById("countActive");
+  refs.countQueued = document.getElementById("countQueued");
+  refs.countCompleted = document.getElementById("countCompleted");
 }
 
 async function boot() {
@@ -531,18 +668,16 @@ async function boot() {
   syncDownloadButton();
 
   refs.analyzeForm.addEventListener("submit", handleAnalyze);
-  refs.downloadForm.addEventListener("submit", handleDownload);
-  refs.formatSelect.addEventListener("change", () => {
-    renderQualityOptions();
-    state.currentSavePath = "";
-    refs.savePathInput.value = "";
-  });
+  refs.downloadButton.addEventListener("click", handleDownload);
+  refs.pasteButton.addEventListener("click", handlePaste);
+  refs.formatChips.addEventListener("click", handleFormatChipClick);
   refs.browseButton.addEventListener("click", chooseSavePath);
   refs.queueButton.addEventListener("click", handleQueueCurrent);
   refs.activeDownloads.addEventListener("click", handleCancelClick);
   refs.queuedDownloads.addEventListener("click", handleQueuedClick);
   refs.startAllQueuedButton.addEventListener("click", handleStartAllQueued);
-  refs.sidebarHistory.addEventListener("click", handleHistoryClick);
+  refs.sidebarList.addEventListener("click", handleSidebarClick);
+  refs.sidebarNav.addEventListener("click", handleTabClick);
   refs.clearHistoryButton.addEventListener("click", handleClearHistory);
 
   const bootstrap = await window.youtubeDownloader.getBootstrap();
@@ -550,7 +685,7 @@ async function boot() {
   renderVideoCard();
   renderPendingDownloads();
   renderActiveDownloads();
-  updateStatusBar();
+  updateCounts();
 
   window.youtubeDownloader.onDownloadEvent(handleDownloadEvent);
   await runAutomationIfConfigured();

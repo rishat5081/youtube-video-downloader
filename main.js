@@ -40,7 +40,7 @@ function createWindow() {
     minWidth: 1180,
     minHeight: 760,
     title: "YouTube Downloader",
-    backgroundColor: "#0d1117",
+    backgroundColor: "#0c0c10",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
