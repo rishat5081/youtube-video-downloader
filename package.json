@@ -1,0 +1,54 @@
+{
+  "name": "youtube-video-downloader",
+  "version": "1.0.0",
+  "description": "A modern Electron desktop app for downloading YouTube videos and audio with yt-dlp. Features real-time progress tracking, queue management, format/quality selection, and persistent download history.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "check": "node --check main.js && node --check preload.js && node --check src/renderer.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --check .",
+    "format:fix": "prettier --write .",
+    "validate": "pnpm check && pnpm lint && pnpm format"
+  },
+  "keywords": [
+    "electron",
+    "youtube",
+    "downloader",
+    "yt-dlp",
+    "video-downloader",
+    "audio-downloader",
+    "mp4",
+    "mp3",
+    "desktop-app",
+    "cross-platform",
+    "ffmpeg"
+  ],
+  "author": "Rishat (https://github.com/rishat5081)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rishat5081/youtube-video-downloader.git"
+  },
+  "bugs": {
+    "url": "https://github.com/rishat5081/youtube-video-downloader/issues"
+  },
+  "homepage": "https://github.com/rishat5081/youtube-video-downloader#readme",
+  "packageManager": "pnpm@10.30.3",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "devDependencies": {
+    "electron": ">=30 <40",
+    "eslint": "^9.0.0",
+    "globals": "^16.0.0",
+    "prettier": "^3.0.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "electron"
+    ]
+  }
+}

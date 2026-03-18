@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>YouTube Downloader</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <div class="sidebar-brand">
+            <svg
+              class="brand-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            <span>YT Downloader</span>
+          </div>
+        </div>
+
+        <div class="sidebar-section sidebar-section-grow">
+          <div class="sidebar-section-header">
+            <span>History</span>
+            <button class="text-btn" id="clearHistoryButton" type="button">Clear</button>
+          </div>
+          <div id="sidebarHistory" class="sidebar-list">
+            <div class="sidebar-empty">Downloads will appear here</div>
+          </div>
+        </div>
+
+        <div class="sidebar-footer">
+          <div class="tool-status">
+            <span class="status-dot" id="ytdlpDot"></span>
+            <span class="tool-label">yt-dlp</span>
+            <span class="status-dot" id="ffmpegDot"></span>
+            <span class="tool-label">ffmpeg</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="workspace">
+        <div class="workspace-scroll">
+          <!-- Flash Message -->
+          <div id="flashMessage" class="flash hidden"></div>
+
+          <!-- URL Input — always visible, centered at top -->
+          <div class="url-section">
+            <form id="analyzeForm" class="url-bar">
+              <div class="url-bar-icon">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                </svg>
+              </div>
+              <input id="urlInput" type="url" class="url-input" placeholder="Paste a YouTube URL here..." required />
+              <button class="url-btn" type="submit" id="analyzeButton">Analyze</button>
+            </form>
+          </div>
+
+          <!-- Empty State — shown before analysis -->
+          <div id="emptyState" class="empty-hero">
+            <div class="empty-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+            </div>
+            <h2>Download YouTube Videos</h2>
+            <p>Paste a link above to get started. Choose your format, quality, and save location.</p>
+          </div>
+
+          <!-- Video Card — revealed after analysis, contains EVERYTHING -->
+          <div id="videoCard" class="video-card" style="display: none">
+            <div class="video-card-media">
+              <div id="videoThumb" class="video-thumb"></div>
+            </div>
+            <div class="video-card-body">
+              <div class="video-meta">
+                <h3 id="videoTitle" class="video-title"></h3>
+                <p id="videoUploader" class="video-uploader"></p>
+                <div class="video-badges">
+                  <span id="videoDuration" class="video-badge"></span>
+                </div>
+              </div>
+              <div class="video-config">
+                <div class="config-row">
+                  <label class="config-field">
+                    <span class="config-label">Format</span>
+                    <select id="formatSelect" class="config-select">
+                      <option value="mp4">MP4 Video</option>
+                      <option value="webm">WEBM Video</option>
+                      <option value="mp3">MP3 Audio</option>
+                      <option value="wav">WAV Audio</option>
+                    </select>
+                  </label>
+                  <label class="config-field">
+                    <span class="config-label">Quality</span>
+                    <select id="qualitySelect" class="config-select"></select>
+                  </label>
+                </div>
+                <label class="config-field">
+                  <span class="config-label">Save to</span>
+                  <div class="path-input-row">
+                    <input
+                      id="savePathInput"
+                      type="text"
+                      class="config-path"
+                      placeholder="Click Browse or just hit Download..."
+                      readonly
+                    />
+                    <button class="path-browse-btn" type="button" id="browseButton">Browse</button>
+                  </div>
+                </label>
+              </div>
+              <form id="downloadForm" class="video-action">
+                <button class="download-btn" type="submit" id="downloadButton">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="download-btn-icon"
+                  >
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                  Download
+                </button>
+                <button class="queue-link" type="button" id="queueButton">or add to queue</button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Active Downloads -->
+          <div id="activeSection" style="display: none">
+            <div class="active-header">
+              <h3 class="active-title">Downloading</h3>
+            </div>
+            <div id="activeDownloads" class="active-list"></div>
+          </div>
+
+          <!-- Queue (only shown when items exist) -->
+          <div id="queueSection" style="display: none">
+            <div class="active-header">
+              <h3 class="active-title">Queue</h3>
+              <button class="btn-text-action" id="startAllQueuedButton" type="button">Start All</button>
+            </div>
+            <div id="queuedDownloads" class="active-list"></div>
+          </div>
+        </div>
+
+        <!-- Status Bar -->
+        <footer class="status-bar">
+          <span class="status-bar-item" id="statusBarVersion">v1.0.0</span>
+          <span class="status-bar-sep"></span>
+          <span class="status-bar-item" id="statusBarDownloads">0 active</span>
+          <span class="status-bar-sep"></span>
+          <span class="status-bar-item" id="statusBarQueue">Queue: 0</span>
+          <span class="status-bar-sep"></span>
+          <span class="status-bar-item" id="statusBarHistory">History: 0</span>
+        </footer>
+      </main>
+    </div>
+
+    <script src="./renderer.js"></script>
+  </body>
+</html>
