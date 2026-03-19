@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://github.com/rishat5081/youtube-video-downloader#readme
+    about: Check the README for setup and usage instructions
+  - name: Discussions
+    url: https://github.com/rishat5081/youtube-video-downloader/discussions
+    about: Ask questions and share ideas in Discussions

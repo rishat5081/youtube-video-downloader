@@ -1,55 +1,67 @@
 # YouTube Video Downloader
 
-A modern, cross-platform desktop application for downloading YouTube videos and audio. Built with **Electron** and **yt-dlp**, featuring a clean dark UI with real-time progress tracking, download queue management, and persistent history.
+A professional, cross-platform desktop application for downloading YouTube videos and audio. Built with **Electron** and **yt-dlp**, featuring a competitor-level dark UI inspired by FDM, IDM, and 4K Video Downloader — with real-time progress tracking, download queue management, and persistent history.
 
+[![CI](https://github.com/rishat5081/youtube-video-downloader/actions/workflows/ci.yml/badge.svg)](https://github.com/rishat5081/youtube-video-downloader/actions/workflows/ci.yml)
+[![Code Quality](https://github.com/rishat5081/youtube-video-downloader/actions/workflows/code-quality.yml/badge.svg)](https://github.com/rishat5081/youtube-video-downloader/actions/workflows/code-quality.yml)
 ![Electron](https://img.shields.io/badge/Electron-30+-47848F?logo=electron&logoColor=white)
-![Platform](https://img.shields.io/badge/Platform-macOS%20|%20Windows%20|%20Linux-blue)
-![License](https://img.shields.io/badge/License-MIT-green)
+![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Windows%20%7C%20Linux-blue)
 ![Node](https://img.shields.io/badge/Node.js-20+-339933?logo=nodedotjs&logoColor=white)
+![pnpm](https://img.shields.io/badge/pnpm-10+-F69220?logo=pnpm&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-green)
 
 ---
 
 ## Features
 
-- **Video Analysis** — Paste any YouTube URL and instantly inspect video metadata (title, channel, duration, thumbnail, available qualities)
-- **Multiple Formats** — Download as MP4, WEBM (video) or MP3, WAV (audio)
-- **Quality Selection** — Choose from all available resolutions and audio bitrates
-- **Real-time Progress** — Live download speed, ETA, percentage, and file size updates
-- **Download Queue** — Queue multiple downloads and start them all concurrently
-- **Persistent History** — Track all completed, failed, and cancelled downloads across sessions
-- **Custom Save Location** — Pick exactly where each file gets saved
-- **Automation Support** — Automate downloads via environment variables for scripting and CI/CD
-- **Dark UI** — Clean, modern dark interface designed for usability and focus
+| Category            | Features                                                                                       |
+| ------------------- | ---------------------------------------------------------------------------------------------- |
+| **Download Engine** | Multi-format (MP4, WEBM, MP3, WAV), quality selection, real-time progress with speed & ETA     |
+| **Queue System**    | Batch queue, start all, individual start/remove, concurrent downloads                          |
+| **Smart UI**        | Three-zone layout, format toggle chips, clipboard paste, sidebar navigation with status tabs   |
+| **History**         | Persistent across sessions, filterable by status (All/Active/Queue/Completed), max 200 entries |
+| **Automation**      | Environment variable support for scripting and CI/CD pipelines                                 |
+| **Security**        | Context isolation, no node integration, XSS-escaped output, local files only                   |
+
+## UI Design
+
+The interface follows a **three-zone layout** inspired by professional download managers:
+
+- **Sidebar** — Navigation tabs (All / Active / Queue / Completed) with live counts, download list with thumbnails and status indicators, tool status pills
+- **Action Bar** — URL input with clipboard paste button and Analyze trigger
+- **Main Content** — Video preview card with format chips, quality selector, download/queue actions, active download progress cards
+
+### Color System
+
+| Element      | Color                             | Usage                                                 |
+| ------------ | --------------------------------- | ----------------------------------------------------- |
+| **Accent**   | `#7c65f6` (Purple)                | Buttons, progress bars, active states, brand identity |
+| **Base**     | `#0c0c10`                         | Background                                            |
+| **Surface**  | `#131318`                         | Cards, sidebar, panels                                |
+| **Elevated** | `#1a1a22`                         | Inputs, chips, hover states                           |
+| **Text**     | `#f0f0f4` / `#9d9db0` / `#5c5c70` | Primary / Secondary / Muted                           |
 
 ## Prerequisites
 
-Before running the application, ensure these tools are installed and available in your system PATH:
+| Tool        | Version | Purpose                | Install                                               |
+| ----------- | ------- | ---------------------- | ----------------------------------------------------- |
+| **Node.js** | 20+     | Runtime                | [nodejs.org](https://nodejs.org)                      |
+| **pnpm**    | 10+     | Package manager        | `corepack enable`                                     |
+| **yt-dlp**  | Latest  | Video extraction       | [github.com/yt-dlp](https://github.com/yt-dlp/yt-dlp) |
+| **ffmpeg**  | Latest  | Audio/video processing | [ffmpeg.org](https://ffmpeg.org)                      |
 
-| Tool        | Version | Purpose                | Install                                                            |
-| ----------- | ------- | ---------------------- | ------------------------------------------------------------------ |
-| **Node.js** | 20+     | Runtime                | [nodejs.org](https://nodejs.org)                                   |
-| **yt-dlp**  | Latest  | Video extraction       | `brew install yt-dlp` / [GitHub](https://github.com/yt-dlp/yt-dlp) |
-| **ffmpeg**  | Latest  | Audio/video processing | `brew install ffmpeg` / [ffmpeg.org](https://ffmpeg.org)           |
-
-### Quick Install (macOS)
+### Quick Install
 
 ```bash
+# macOS
 brew install yt-dlp ffmpeg
-```
 
-### Quick Install (Windows)
-
-```bash
+# Windows
 winget install yt-dlp.yt-dlp
 winget install Gyan.FFmpeg
-```
 
-### Quick Install (Linux)
-
-```bash
 # Ubuntu/Debian
-sudo apt install ffmpeg
-pip install yt-dlp
+sudo apt install ffmpeg && pip install yt-dlp
 
 # Arch
 sudo pacman -S yt-dlp ffmpeg
@@ -62,32 +74,33 @@ sudo pacman -S yt-dlp ffmpeg
 git clone https://github.com/rishat5081/youtube-video-downloader.git
 cd youtube-video-downloader
 
+# Enable corepack (for pnpm)
+corepack enable
+
 # Install dependencies
-npm install
+pnpm install
 
 # Start the application
-npm start
+pnpm start
 ```
 
 ## Usage
 
 ### Basic Workflow
 
-1. **Paste URL** — Copy a YouTube video URL and paste it into the input field
-2. **Analyze** — Click "Analyze" to fetch video metadata and available qualities
-3. **Configure** — Select your preferred format (MP4/WEBM/MP3/WAV) and quality
-4. **Choose Location** — Click "Browse" to select where to save the file
-5. **Download** — Click "Start Download" or add to queue for batch downloading
+1. **Paste URL** — Paste a YouTube URL into the action bar (or click the clipboard button)
+2. **Analyze** — Hit Enter or click Analyze to fetch video metadata
+3. **Choose Format** — Click format chips: MP4, WEBM, MP3, or WAV
+4. **Select Quality** — Pick resolution or audio bitrate from the dropdown
+5. **Download** — Click "Download Now" or "Add to Queue" for batch processing
 
 ### Queue Management
 
-- **Add to Queue** — Configure a download and click "Add to Queue" instead of starting immediately
-- **Start All** — Launch all queued downloads concurrently with the "Start All" button
-- **Individual Control** — Start or remove individual items from the queue
+- **Add to Queue** — Configure and click "Add to Queue" to batch items
+- **Start All** — Launch all queued downloads concurrently
+- **Sidebar Tabs** — Filter by All, Active, Queue, or Completed
 
 ### Automation
-
-The app supports automated downloads via environment variables:
 
 ```bash
 AUTO_URL="https://www.youtube.com/watch?v=..." \
@@ -95,33 +108,55 @@ AUTO_SAVE_PATH="/path/to/output.mp4" \
 AUTO_FORMAT="mp4" \
 AUTO_QUALITY="1080" \
 AUTO_START="1" \
-npm start
+pnpm start
 ```
 
 | Variable         | Description                                  | Default |
 | ---------------- | -------------------------------------------- | ------- |
 | `AUTO_URL`       | YouTube video URL                            | —       |
 | `AUTO_SAVE_PATH` | Output file path                             | —       |
-| `AUTO_FORMAT`    | Output format (`mp4`, `webm`, `mp3`, `wav`)  | `mp4`   |
+| `AUTO_FORMAT`    | Format (`mp4`, `webm`, `mp3`, `wav`)         | `mp4`   |
 | `AUTO_QUALITY`   | Quality (`best`, `1080`, `720`, `480`, etc.) | `best`  |
 | `AUTO_START`     | Auto-start download (`1` = yes)              | `0`     |
-| `AUTOMATION_LOG` | Log automation events to stdout (`1` = yes)  | `0`     |
+| `AUTOMATION_LOG` | Log events to stdout (`1` = yes)             | `0`     |
 
 ## Architecture
 
 ```
 youtube-video-downloader/
-├── main.js              # Electron main process (IPC, download management, history)
-├── preload.js           # Context bridge (secure IPC between main & renderer)
-├── package.json         # Dependencies and scripts
+├── main.js                          # Electron main process
+├── preload.js                       # Context bridge (secure IPC)
+├── lib/
+│   └── utils.js                     # Pure utility functions (testable)
 ├── src/
-│   ├── index.html       # Application UI structure
-│   ├── styles.css       # Dark theme styling
-│   └── renderer.js      # Renderer process (UI logic, state management)
-└── downloads/           # Default download directory
+│   ├── index.html                   # Application UI structure
+│   ├── styles.css                   # Dark theme with purple accent
+│   └── renderer.js                  # Renderer process (UI logic)
+├── tests/
+│   └── utils.test.js                # Unit tests (Node.js test runner)
+├── .github/
+│   ├── workflows/
+│   │   ├── ci.yml                   # Lint, format, syntax, test (Node 20+22)
+│   │   ├── code-quality.yml         # Audit, license check, coverage
+│   │   ├── dependency-review.yml    # PR dependency scanning
+│   │   ├── pr-checks.yml           # Conventional commit validation
+│   │   ├── release.yml              # Tag-based GitHub releases
+│   │   └── stale.yml                # Auto-close stale issues/PRs
+│   ├── ISSUE_TEMPLATE/              # Bug report & feature request forms
+│   ├── PULL_REQUEST_TEMPLATE.md     # PR checklist template
+│   ├── CODEOWNERS                   # Code ownership rules
+│   ├── SECURITY.md                  # Security policy
+│   └── dependabot.yml               # Automated dependency updates
+├── CONTRIBUTING.md                  # Contribution guidelines
+├── LICENSE                          # MIT License
+├── eslint.config.js                 # ESLint 9 flat config
+├── .prettierrc                      # Prettier configuration
+├── .editorconfig                    # Editor settings
+├── .nvmrc                           # Node.js version
+└── .npmrc                           # npm/pnpm configuration
 ```
 
-### Application Architecture Diagram
+### Application Architecture
 
 ```mermaid
 graph TB
@@ -143,6 +178,10 @@ graph TB
             SM["State Manager (renderer.js)"]
             EH[Event Handlers]
         end
+
+        subgraph Lib["Shared Library (lib/utils.js)"]
+            FN[Pure Utility Functions]
+        end
     end
 
     subgraph External["External Tools"]
@@ -163,18 +202,20 @@ graph TB
     IPC --> DM
     IPC --> HM
     IPC --> TD
+    DM -->|"uses"| FN
     DM -->|"spawn"| YTDLP
     YTDLP -->|"merge/convert"| FFMPEG
     YTDLP <-->|"fetch"| YT
     HM <-->|"read/write"| JSON
     DM -->|"progress events"| IPC
 
-    style Main fill:#1c2128,stroke:#58a6ff,color:#e6edf3
-    style Renderer fill:#1c2128,stroke:#3fb950,color:#e6edf3
-    style Preload fill:#1c2128,stroke:#d29922,color:#e6edf3
-    style External fill:#161b22,stroke:#8b949e,color:#e6edf3
-    style Storage fill:#161b22,stroke:#8b949e,color:#e6edf3
-    style Web fill:#161b22,stroke:#8b949e,color:#e6edf3
+    style Main fill:#1c1c28,stroke:#7c65f6,color:#f0f0f4
+    style Renderer fill:#1c1c28,stroke:#34d399,color:#f0f0f4
+    style Preload fill:#1c1c28,stroke:#fbbf24,color:#f0f0f4
+    style Lib fill:#1c1c28,stroke:#60a5fa,color:#f0f0f4
+    style External fill:#131318,stroke:#5c5c70,color:#f0f0f4
+    style Storage fill:#131318,stroke:#5c5c70,color:#f0f0f4
+    style Web fill:#131318,stroke:#5c5c70,color:#f0f0f4
 ```
 
 ### Download Flow
@@ -195,10 +236,10 @@ sequenceDiagram
     YT-->>Y: Video info + formats
     Y-->>M: JSON metadata
     M-->>R: Parsed metadata
-    R-->>User: Show title, thumbnail, qualities
+    R-->>User: Show video card with options
 
     User->>R: Select format, quality, path
-    User->>R: Click "Start Download"
+    User->>R: Click "Download Now"
     R->>M: startDownload(options)
     M->>Y: Spawn with format args
     Y->>YT: Download streams
@@ -206,7 +247,7 @@ sequenceDiagram
     loop Progress Updates
         Y-->>M: Progress line (%, speed, ETA)
         M-->>R: download-progress event
-        R-->>User: Update progress bar
+        R-->>User: Update progress bar & sidebar
     end
 
     Y->>F: Merge video + audio
@@ -222,44 +263,35 @@ sequenceDiagram
 ```mermaid
 graph LR
     subgraph App["Application Window"]
-        subgraph Sidebar["Sidebar (280px)"]
-            Brand[YT Downloader + New Button]
-            Queue[Queue Section]
-            History[History Section]
-            Tools[Tool Status: yt-dlp / ffmpeg]
+        subgraph Sidebar["Sidebar (260px)"]
+            Brand["Brand + Version"]
+            Tabs["Nav Tabs: All | Active | Queue | Completed"]
+            List["Download List with Thumbnails"]
+            Footer["Tool Status: yt-dlp + ffmpeg"]
         end
 
         subgraph Workspace["Main Workspace"]
-            S1["Step 1: Paste & Analyze"]
-            Meta[Video Metadata Card]
-            S2["Step 2: Configure Download"]
-            Active[Active Downloads + Progress]
-            QueuePanel[Queue Panel]
+            ActionBar["Action Bar: URL Input + Paste + Analyze"]
+            VideoCard["Video Card: Thumbnail + Format Chips + Config"]
+            ActiveDL["Active Downloads with Progress"]
+            Queue["Queue with Start All"]
         end
 
         subgraph StatusBar["Status Bar"]
-            Ver[v1.0.0]
-            ActiveCount[Active: 0]
-            QueueCount[Queue: 0]
-            HistCount[History: 0]
+            ActiveCount["Active: 0"]
+            QueueCount["Queue: 0"]
+            HistCount["History: 0"]
+            Ver["v1.0.0"]
         end
     end
 
-    Brand --> Queue --> History --> Tools
-    S1 --> Meta --> S2 --> Active --> QueuePanel
+    Brand --> Tabs --> List --> Footer
+    ActionBar --> VideoCard --> ActiveDL --> Queue
 
-    style Sidebar fill:#161b22,stroke:#8b949e,color:#e6edf3
-    style Workspace fill:#0d1117,stroke:#8b949e,color:#e6edf3
-    style StatusBar fill:#161b22,stroke:#8b949e,color:#e6edf3
+    style Sidebar fill:#131318,stroke:#5c5c70,color:#f0f0f4
+    style Workspace fill:#0c0c10,stroke:#5c5c70,color:#f0f0f4
+    style StatusBar fill:#131318,stroke:#5c5c70,color:#f0f0f4
 ```
-
-### Process Architecture
-
-| Process      | File          | Responsibilities                                                      |
-| ------------ | ------------- | --------------------------------------------------------------------- |
-| **Main**     | `main.js`     | Window management, yt-dlp spawning, file dialogs, history persistence |
-| **Preload**  | `preload.js`  | Secure IPC bridge via `contextBridge`                                 |
-| **Renderer** | `renderer.js` | UI rendering, state management, user interaction handling             |
 
 ### IPC Communication
 
@@ -284,9 +316,18 @@ graph LR
     B -->|"downloads:event (finished)"| A
     B -->|"downloads:event (history)"| A
 
-    style Renderer fill:#1c2128,stroke:#3fb950,color:#e6edf3
-    style Main fill:#1c2128,stroke:#58a6ff,color:#e6edf3
+    style Renderer fill:#1c1c28,stroke:#34d399,color:#f0f0f4
+    style Main fill:#1c1c28,stroke:#7c65f6,color:#f0f0f4
 ```
+
+### Process Architecture
+
+| Process      | File           | Responsibilities                                                      |
+| ------------ | -------------- | --------------------------------------------------------------------- |
+| **Main**     | `main.js`      | Window management, yt-dlp spawning, file dialogs, history persistence |
+| **Preload**  | `preload.js`   | Secure IPC bridge via `contextBridge`                                 |
+| **Renderer** | `renderer.js`  | UI rendering, state management, user interaction handling             |
+| **Library**  | `lib/utils.js` | Pure utility functions shared across processes                        |
 
 ### Data Storage
 
@@ -294,66 +335,86 @@ graph LR
   - macOS: `~/Library/Application Support/youtube-downloader-electron/download-history.json`
   - Windows: `%APPDATA%/youtube-downloader-electron/download-history.json`
   - Linux: `~/.config/youtube-downloader-electron/download-history.json`
-- Maximum 200 history entries (oldest entries are automatically pruned)
+- Maximum **200** history entries (oldest entries are automatically pruned)
+
+## Scripts
+
+| Script               | Description                             |
+| -------------------- | --------------------------------------- |
+| `pnpm start`         | Launch the application                  |
+| `pnpm dev`           | Launch in development mode              |
+| `pnpm test`          | Run unit tests                          |
+| `pnpm test:coverage` | Run tests with coverage report          |
+| `pnpm lint`          | Run ESLint                              |
+| `pnpm lint:fix`      | Run ESLint with auto-fix                |
+| `pnpm format`        | Check Prettier formatting               |
+| `pnpm format:fix`    | Fix Prettier formatting                 |
+| `pnpm check`         | Syntax-check all JavaScript files       |
+| `pnpm validate`      | Run all checks (syntax + lint + format) |
 
 ## Tech Stack
 
-| Technology                                 | Purpose                            |
-| ------------------------------------------ | ---------------------------------- |
-| [Electron](https://www.electronjs.org/)    | Cross-platform desktop framework   |
-| [yt-dlp](https://github.com/yt-dlp/yt-dlp) | YouTube video/audio extraction     |
-| [ffmpeg](https://ffmpeg.org/)              | Audio/video processing and merging |
-| Node.js child_process                      | Process spawning for yt-dlp        |
+| Technology                                                        | Purpose                            |
+| ----------------------------------------------------------------- | ---------------------------------- |
+| [Electron](https://www.electronjs.org/)                           | Cross-platform desktop framework   |
+| [yt-dlp](https://github.com/yt-dlp/yt-dlp)                        | YouTube video/audio extraction     |
+| [ffmpeg](https://ffmpeg.org/)                                     | Audio/video processing and merging |
+| [ESLint 9](https://eslint.org/)                                   | JavaScript linting (flat config)   |
+| [Prettier](https://prettier.io/)                                  | Code formatting                    |
+| [Node.js Test Runner](https://nodejs.org/api/test.html)           | Unit testing (zero dependencies)   |
+| [GitHub Actions](https://github.com/features/actions)             | CI/CD pipelines                    |
+| [Dependabot](https://docs.github.com/en/code-security/dependabot) | Automated dependency updates       |
+
+## CI/CD Pipelines
+
+| Workflow              | Trigger             | Jobs                                                            |
+| --------------------- | ------------------- | --------------------------------------------------------------- |
+| **CI**                | Push to `main`, PRs | Lint, Format, Syntax, Tests (Node 20+22 matrix), Security Audit |
+| **Code Quality**      | PRs, Weekly         | Security audit, License compliance, Test coverage               |
+| **Dependency Review** | PRs                 | Vulnerability scanning, License validation                      |
+| **PR Checks**         | PRs                 | Conventional commit title validation                            |
+| **Release**           | Tag `v*`            | Validate → Create GitHub Release with auto-generated notes      |
+| **Stale**             | Daily cron          | Auto-close stale issues and PRs (30 days inactive)              |
+
+## Supported Formats
+
+| Format | Type  | Codec        | Description                  |
+| ------ | ----- | ------------ | ---------------------------- |
+| MP4    | Video | H.264 + AAC  | Most compatible video format |
+| WEBM   | Video | VP9 + Opus   | Open-source video format     |
+| MP3    | Audio | MPEG Layer 3 | Universal audio format       |
+| WAV    | Audio | PCM          | Uncompressed lossless audio  |
 
 ## Security
 
 - **Context Isolation**: Enabled — renderer cannot access Node.js APIs directly
 - **Node Integration**: Disabled — all IPC goes through the preload bridge
-- **XSS Protection**: All user-facing content is HTML-escaped
+- **XSS Protection**: All user-facing content is HTML-escaped via `escapeHtml()`
 - **No Remote Content**: App loads only local files
+- **Input Validation**: URLs and file paths are validated before processing
+- **Dependency Auditing**: Automated via CI and Dependabot
 
-## Scripts
-
-```bash
-npm start     # Launch the application
-npm run dev   # Launch in development mode
-npm run check # Syntax-check all JavaScript files
-```
-
-## Supported Formats
-
-| Format | Type  | Description             |
-| ------ | ----- | ----------------------- |
-| MP4    | Video | H.264 video + AAC audio |
-| WEBM   | Video | VP9 video + Opus audio  |
-| MP3    | Audio | MPEG Layer 3 audio      |
-| WAV    | Audio | Uncompressed PCM audio  |
+See [SECURITY.md](.github/SECURITY.md) for our vulnerability disclosure policy.
 
 ## Troubleshooting
 
-### yt-dlp not found
-
-Ensure yt-dlp is in your PATH. Run `which yt-dlp` (macOS/Linux) or `where yt-dlp` (Windows) to verify.
-
-### ffmpeg not found
-
-Ensure ffmpeg is in your PATH. The app requires ffmpeg for video merging and audio conversion.
-
-### Download fails with merge error
-
-Update yt-dlp to the latest version: `yt-dlp -U` or `brew upgrade yt-dlp`
-
-### Video quality not available
-
-Some videos have limited format availability. Try selecting "Best available" quality.
+| Issue                           | Solution                                                                           |
+| ------------------------------- | ---------------------------------------------------------------------------------- |
+| yt-dlp not found                | Ensure yt-dlp is in PATH: `which yt-dlp` (macOS/Linux) or `where yt-dlp` (Windows) |
+| ffmpeg not found                | Install ffmpeg and ensure it's in PATH                                             |
+| Download fails with merge error | Update yt-dlp: `yt-dlp -U` or `brew upgrade yt-dlp`                                |
+| Video quality not available     | Some videos have limited formats — select "Best available"                         |
+| App won't start                 | Check Node.js version: `node --version` (needs 20+)                                |
 
 ## Contributing
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+We welcome contributions! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
+
+- Development setup
+- Branch naming conventions
+- Conventional commit messages
+- Pull request process
+- Code style and testing
 
 ## License
 

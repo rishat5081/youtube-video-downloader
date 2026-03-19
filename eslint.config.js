@@ -35,6 +35,6 @@ module.exports = [
     }
   },
   {
-    ignores: ["node_modules/", "dist/", "downloads/"]
+    ignores: ["node_modules/", "dist/", "downloads/", "coverage/"]
   }
 ];

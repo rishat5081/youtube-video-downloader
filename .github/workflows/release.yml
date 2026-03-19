@@ -9,9 +9,37 @@ permissions:
   contents: write
 
 jobs:
+  validate:
+    name: Validate Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "pnpm"
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Format check
+        run: pnpm format
+
+      - name: Syntax check
+        run: pnpm check
+
+      - name: Run tests
+        run: pnpm test
+
   create-release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
+    needs: validate
     steps:
       - uses: actions/checkout@v4
         with:
@@ -24,9 +52,11 @@ jobs:
           PREV_TAG=$(git tag --sort=-creatordate | grep -v "^${TAG}$" | head -1)
           if [ -n "$PREV_TAG" ]; then
             echo "## Changes since ${PREV_TAG}" > notes.md
+            echo "" >> notes.md
             git log ${PREV_TAG}..${TAG} --pretty=format:"- %s (%h)" >> notes.md
           else
             echo "## Initial Release" > notes.md
+            echo "" >> notes.md
             git log --pretty=format:"- %s (%h)" >> notes.md
           fi
 
