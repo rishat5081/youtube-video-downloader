@@ -78,11 +78,16 @@ export interface DownloadTask {
 }
 
 export interface AutomationConfig {
-  url: string;
-  savePath: string;
-  format: string;
-  quality: string;
+  url?: string;
+  savePath?: string;
+  format?: string;
+  quality?: string;
   autoStart: boolean;
+  autoQuit?: boolean;
+  cancelAfterMs?: number;
+  clearHistory?: boolean;
+  openFirstHistory?: boolean;
+  queueItems?: StartDownloadPayload[];
 }
 
 export interface BootstrapPayload {
@@ -148,5 +153,6 @@ export interface YoutubeDownloaderAPI {
   cancelDownload(taskId: string): Promise<boolean>;
   openFolder(filePath: string): Promise<true>;
   clearHistory(): Promise<true>;
+  quitApp(): Promise<true>;
   onDownloadEvent(callback: (payload: DownloadEvent) => void): () => void;
 }

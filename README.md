@@ -50,7 +50,26 @@ The interface follows a **three-zone layout** inspired by professional download 
 | **yt-dlp**  | Latest  | Video extraction       | [github.com/yt-dlp](https://github.com/yt-dlp/yt-dlp) |
 | **ffmpeg**  | Latest  | Audio/video processing | [ffmpeg.org](https://ffmpeg.org)                      |
 
-### Quick Install
+### One-Command Setup
+
+The repository includes a cross-platform bootstrap launcher:
+
+```bash
+./application.start
+```
+
+What it does:
+
+- detects `macOS`, `Linux`, or Windows shell environments (`Git Bash`, `MSYS2`, or `WSL`)
+- fetches the latest official Node.js current release from `https://nodejs.org/dist/index.json`
+- installs `nvm` / Node.js, `pnpm`, `yt-dlp`, and `ffmpeg`
+- runs `pnpm install`
+- runs `pnpm build`
+- launches the Electron app
+
+As of March 20, 2026, the latest official Node.js current release detected from the Node.js release index is `25.8.1`.
+
+### Manual Quick Install
 
 ```bash
 # macOS
@@ -74,14 +93,8 @@ sudo pacman -S yt-dlp ffmpeg
 git clone https://github.com/rishat5081/youtube-video-downloader.git
 cd youtube-video-downloader
 
-# Enable corepack (for pnpm)
-corepack enable
-
-# Install dependencies
-pnpm install
-
-# Start the application
-pnpm start
+# Full setup + launch
+./application.start
 ```
 
 ## Usage
@@ -137,8 +150,13 @@ youtube-video-downloader/
 │   └── utils.test.ts                # Unit tests (via tsx runner)
 ├── scripts/
 │   └── copy-static.js               # Copies HTML/CSS to dist/
+├── application.start                # Cross-platform bootstrap + launch script
 ├── dist/                            # Compiled output (gitignored)
-├── tsconfig.json                    # TypeScript compiler configuration
+├── tsconfig.base.json               # Shared TypeScript compiler options
+├── tsconfig.main.json               # Main/preload TypeScript build (CommonJS)
+├── tsconfig.renderer.json           # Renderer TypeScript build (ES modules)
+├── tsconfig.test.json               # Test type-check configuration
+├── tsconfig.json                    # TypeScript project references
 ├── .github/
 │   ├── workflows/
 │   │   ├── ci.yml                   # Lint, format, typecheck, test (Node 20+22)
@@ -344,19 +362,20 @@ graph LR
 
 ## Scripts
 
-| Script               | Description                                |
-| -------------------- | ------------------------------------------ |
-| `pnpm build`         | Compile TypeScript + copy static assets    |
-| `pnpm start`         | Build + launch the application             |
-| `pnpm dev`           | Build + launch in development mode         |
-| `pnpm test`          | Run unit tests (via tsx)                   |
-| `pnpm test:coverage` | Run tests with coverage report             |
-| `pnpm lint`          | Run ESLint                                 |
-| `pnpm lint:fix`      | Run ESLint with auto-fix                   |
-| `pnpm format`        | Check Prettier formatting                  |
-| `pnpm format:fix`    | Fix Prettier formatting                    |
-| `pnpm check`         | Type-check all TypeScript (tsc --noEmit)   |
-| `pnpm validate`      | Run all checks (typecheck + lint + format) |
+| Script                | Description                                        |
+| --------------------- | -------------------------------------------------- |
+| `pnpm build`          | Compile TypeScript + copy static assets            |
+| `./application.start` | Install toolchain, install deps, build, and launch |
+| `pnpm start`          | Build + launch the application                     |
+| `pnpm dev`            | Build + launch in development mode                 |
+| `pnpm test`           | Run unit tests (via tsx)                           |
+| `pnpm test:coverage`  | Run tests with coverage report                     |
+| `pnpm lint`           | Run ESLint                                         |
+| `pnpm lint:fix`       | Run ESLint with auto-fix                           |
+| `pnpm format`         | Check Prettier formatting                          |
+| `pnpm format:fix`     | Fix Prettier formatting                            |
+| `pnpm check`          | Type-check all TypeScript (tsc --noEmit)           |
+| `pnpm validate`       | Run all checks (typecheck + lint + format)         |
 
 ## Tech Stack
 

@@ -35,11 +35,54 @@ let toolStatus: ToolStatus = {
   ffmpegAvailable: false
 };
 
+function automationLog(message: string, details?: unknown): void {
+  if (process.env.AUTOMATION_LOG !== "1") {
+    return;
+  }
+
+  if (details === undefined) {
+    console.log(`AUTOMATION_LOG ${message}`);
+    return;
+  }
+
+  try {
+    console.log(`AUTOMATION_LOG ${message} ${JSON.stringify(details)}`);
+  } catch {
+    console.log(`AUTOMATION_LOG ${message}`);
+  }
+}
+
 function getAutomationConfig(): AutomationConfig | null {
+  const autoQueue = process.env.AUTO_QUEUE || "";
   const autoUrl = process.env.AUTO_URL || "";
   const autoSavePath = process.env.AUTO_SAVE_PATH || "";
+  const autoQuit = process.env.AUTO_QUIT === "1";
+  const clearHistory = process.env.AUTO_CLEAR_HISTORY === "1";
+  const openFirstHistory = process.env.AUTO_OPEN_HISTORY_FIRST === "1";
+  const cancelAfterMs = Number(process.env.AUTO_CANCEL_AFTER_MS || 0) || undefined;
 
-  if (!autoUrl || !autoSavePath) {
+  let queueItems: StartDownloadPayload[] | undefined;
+  if (autoQueue) {
+    try {
+      const parsed = JSON.parse(autoQueue) as unknown;
+      if (Array.isArray(parsed)) {
+        queueItems = parsed.filter(
+          (item): item is StartDownloadPayload =>
+            typeof item === "object" &&
+            item !== null &&
+            typeof (item as StartDownloadPayload).url === "string" &&
+            typeof (item as StartDownloadPayload).title === "string" &&
+            typeof (item as StartDownloadPayload).format === "string" &&
+            typeof (item as StartDownloadPayload).quality === "string" &&
+            typeof (item as StartDownloadPayload).savePath === "string"
+        );
+      }
+    } catch {
+      queueItems = undefined;
+    }
+  }
+
+  if ((!autoUrl || !autoSavePath) && (!queueItems || queueItems.length === 0) && !clearHistory && !openFirstHistory) {
     return null;
   }
 
@@ -48,7 +91,12 @@ function getAutomationConfig(): AutomationConfig | null {
     savePath: autoSavePath,
     format: process.env.AUTO_FORMAT || "mp4",
     quality: process.env.AUTO_QUALITY || "best",
-    autoStart: process.env.AUTO_START === "1"
+    autoStart: process.env.AUTO_START === "1",
+    autoQuit,
+    cancelAfterMs,
+    clearHistory,
+    openFirstHistory,
+    queueItems
   };
 }
 
@@ -65,6 +113,22 @@ function createWindow(): void {
       contextIsolation: true,
       nodeIntegration: false
     }
+  });
+
+  mainWindow.webContents.on("did-finish-load", () => {
+    automationLog("window:did-finish-load");
+  });
+
+  mainWindow.webContents.on("did-fail-load", (_, errorCode, errorDescription) => {
+    automationLog("window:did-fail-load", { errorCode, errorDescription });
+  });
+
+  mainWindow.webContents.on("render-process-gone", (_, details) => {
+    automationLog("window:render-process-gone", details);
+  });
+
+  mainWindow.webContents.on("console-message", (_, level, message, line, sourceId) => {
+    automationLog("window:console", { level, message, line, sourceId });
   });
 
   mainWindow.loadFile(path.join(__dirname, "src/index.html"));
@@ -203,12 +267,12 @@ function splitLines(buffer: string, incomingChunk: string, onLine: (line: string
 }
 
 function sendDownloadEvent(payload: DownloadEvent): void {
-  if (process.env.AUTOMATION_LOG === "1") {
-    try {
-      console.log(`AUTOMATION_EVENT ${JSON.stringify(payload)}`);
-    } catch {
-      console.log("AUTOMATION_EVENT serialization-error");
-    }
+  automationLog("event", payload);
+
+  if (process.env.AUTO_QUIT === "1" && payload.type === "download-finished" && activeDownloads.size === 0) {
+    setTimeout(() => {
+      app.quit();
+    }, 250);
   }
 
   if (mainWindow && !mainWindow.isDestroyed()) {
@@ -435,7 +499,10 @@ ipcMain.handle("app:get-bootstrap", async () => {
 });
 
 ipcMain.handle("downloads:inspect-url", async (_, url: string) => {
-  return inspectUrl(url);
+  automationLog("inspect-url:start", { url });
+  const result = await inspectUrl(url);
+  automationLog("inspect-url:success", { title: result.title, uploader: result.uploader });
+  return result;
 });
 
 ipcMain.handle("downloads:browse-save-path", async (_, payload: BrowseSavePathPayload) => {
@@ -477,11 +544,22 @@ ipcMain.handle("history:clear", async () => {
   return true;
 });
 
+ipcMain.handle("app:quit", async () => {
+  setTimeout(() => {
+    app.quit();
+  }, 50);
+  return true;
+});
+
 app.whenReady().then(async () => {
   historyFilePath = path.join(app.getPath("userData"), "download-history.json");
   await ensureHistoryFile();
   await loadHistory();
   toolStatus = await detectTools();
+  automationLog("app-ready", {
+    automation: getAutomationConfig(),
+    tools: toolStatus
+  });
   createWindow();
 
   app.on("activate", () => {

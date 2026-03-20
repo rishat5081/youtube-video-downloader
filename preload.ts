@@ -30,6 +30,9 @@ const api: YoutubeDownloaderAPI = {
   clearHistory(): Promise<true> {
     return ipcRenderer.invoke("history:clear");
   },
+  quitApp(): Promise<true> {
+    return ipcRenderer.invoke("app:quit");
+  },
   onDownloadEvent(callback: (payload: DownloadEvent) => void): () => void {
     const listener = (_: IpcRendererEvent, payload: DownloadEvent) => callback(payload);
     ipcRenderer.on("downloads:event", listener);

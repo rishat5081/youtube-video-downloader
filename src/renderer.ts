@@ -59,6 +59,7 @@ interface Refs {
   videoTitle: HTMLElement;
   videoUploader: HTMLElement;
   videoDuration: HTMLElement;
+  inlineDownloadStatus: HTMLElement;
   activeSection: HTMLElement;
   activeDownloads: HTMLElement;
   queueSection: HTMLElement;
@@ -159,6 +160,22 @@ function timeAgo(dateStr: string): string {
   const hours = Math.floor(mins / 60);
   if (hours < 24) return `${hours}h`;
   return `${Math.floor(hours / 24)}d`;
+}
+
+function getYouTubeVideoId(url: string | null | undefined): string {
+  if (!url) return "";
+
+  try {
+    const parsed = new URL(url);
+
+    if (parsed.hostname.includes("youtu.be")) {
+      return parsed.pathname.replace("/", "");
+    }
+
+    return parsed.searchParams.get("v") || "";
+  } catch {
+    return "";
+  }
 }
 
 /* ---- Flash ---- */
@@ -314,6 +331,52 @@ function renderVideoCard(): void {
   refs.videoTitle.textContent = meta.title;
   refs.videoUploader.textContent = meta.uploader;
   refs.videoDuration.textContent = getDurationLabel(meta.duration);
+  renderInlineDownloadStatus();
+}
+
+function renderInlineDownloadStatus(): void {
+  const activeTasks = [...state.activeDownloads.values()];
+  const metadataVideoId = getYouTubeVideoId(state.metadata?.webpageUrl);
+  const currentTask =
+    activeTasks.find((task) => {
+      const taskVideoId = getYouTubeVideoId(task.url);
+      if (metadataVideoId && taskVideoId) {
+        return metadataVideoId === taskVideoId;
+      }
+
+      return state.metadata ? task.title === state.metadata.title : false;
+    }) || activeTasks[0];
+
+  if (!state.metadata || !currentTask) {
+    refs.inlineDownloadStatus.className = "vc-live hidden";
+    refs.inlineDownloadStatus.innerHTML = "";
+    return;
+  }
+
+  const percent = Math.max(0, Math.min(100, currentTask.percent || 0));
+  const eta = escapeHtml(getEtaLabel(currentTask.eta));
+  const speed = escapeHtml(getSpeedLabel(currentTask.speed));
+  const downloaded = escapeHtml(getFileSizeLabel(currentTask.downloadedBytes || 0));
+  const total = escapeHtml(getFileSizeLabel(currentTask.totalBytes || 0));
+
+  refs.inlineDownloadStatus.className = "vc-live";
+  refs.inlineDownloadStatus.innerHTML = `
+    <div class="vc-live-head">
+      <div class="vc-live-labels">
+        <span class="vc-live-kicker">Live download</span>
+        <span class="vc-live-state ${escapeHtml(currentTask.status)}">${escapeHtml(currentTask.status)}</span>
+      </div>
+      <span class="vc-live-percent">${Math.round(percent)}%</span>
+    </div>
+    <div class="vc-live-track">
+      <div class="vc-live-bar" style="width:${percent}%"></div>
+    </div>
+    <div class="vc-live-stats">
+      <span>Speed <strong>${speed}</strong></span>
+      <span>ETA <strong>${eta}</strong></span>
+      <span>Size <strong>${downloaded} / ${total}</strong></span>
+    </div>
+  `;
 }
 
 /* ---- Format chips ---- */
@@ -350,6 +413,7 @@ function renderActiveDownloads(): void {
   const tasks = [...state.activeDownloads.values()];
   if (tasks.length === 0) {
     refs.activeSection.style.display = "none";
+    renderInlineDownloadStatus();
     updateCounts();
     renderSidebarList();
     return;
@@ -380,6 +444,7 @@ function renderActiveDownloads(): void {
     </div>`
     )
     .join("");
+  renderInlineDownloadStatus();
   updateCounts();
   renderSidebarList();
 }
@@ -417,6 +482,7 @@ function renderPendingDownloads(): void {
 }
 
 function renderHistory(): void {
+  renderInlineDownloadStatus();
   renderSidebarList();
   updateCounts();
 }
@@ -436,31 +502,118 @@ function applyBootstrap(payload: BootstrapPayload): void {
 /* ---- Automation ---- */
 
 async function runAutomationIfConfigured(): Promise<void> {
-  if (!state.automation || !state.automation.url || !state.automation.savePath) return;
-  refs.urlInput.value = state.automation.url;
-  setActiveFormat(state.automation.format);
-  renderQualityOptions();
+  if (!state.automation) return;
+
   try {
+    if (state.automation.openFirstHistory && state.history[0]?.status === "completed") {
+      await window.youtubeDownloader.openFolder(state.history[0].outputPath || state.history[0].savePath);
+    }
+
+    if (state.automation.clearHistory) {
+      await window.youtubeDownloader.clearHistory();
+      state.history = [];
+      renderHistory();
+    }
+
+    if ((state.automation.openFirstHistory || state.automation.clearHistory) && !state.automation.autoStart) {
+      if (state.automation.autoQuit) {
+        await window.youtubeDownloader.quitApp();
+      }
+      return;
+    }
+
+    if (state.automation.queueItems && state.automation.queueItems.length > 0) {
+      const pendingEntries: PendingEntry[] = [];
+
+      for (const item of state.automation.queueItems) {
+        const metadata = await window.youtubeDownloader.inspectUrl(item.url);
+        pendingEntries.push({
+          id: crypto.randomUUID(),
+          url: item.url,
+          title: metadata.title,
+          thumbnail: metadata.thumbnail || "",
+          format: item.format,
+          quality: item.quality,
+          savePath: item.savePath
+        });
+      }
+
+      state.pendingDownloads = pendingEntries;
+      renderPendingDownloads();
+      setFlashMessage("Automation loaded queued downloads.", "success");
+
+      if (!state.automation.autoStart) {
+        return;
+      }
+
+      const startedIds = new Set<string>();
+
+      for (const entry of pendingEntries) {
+        const result = await window.youtubeDownloader.startDownload({
+          url: entry.url,
+          title: entry.title,
+          format: entry.format,
+          quality: entry.quality,
+          savePath: entry.savePath
+        });
+
+        startedIds.add(entry.id);
+
+        if (state.automation.cancelAfterMs && state.automation.cancelAfterMs > 0) {
+          setTimeout(() => {
+            void window.youtubeDownloader.cancelDownload(result.taskId);
+          }, state.automation.cancelAfterMs);
+        }
+      }
+
+      state.pendingDownloads = state.pendingDownloads.filter((entry) => !startedIds.has(entry.id));
+      renderPendingDownloads();
+      setFlashMessage("Automation started queued downloads.", "success");
+      return;
+    }
+
+    if (!state.automation.url || !state.automation.savePath) {
+      return;
+    }
+
+    refs.urlInput.value = state.automation.url;
+    setActiveFormat(state.automation.format || "mp4");
+    renderQualityOptions();
+
     const metadata = await window.youtubeDownloader.inspectUrl(state.automation.url);
     state.metadata = metadata;
     renderVideoCard();
     renderQualityOptions();
     syncDownloadButton();
-    if ([...refs.qualitySelect.options].some((o) => o.value === state.automation!.quality)) {
-      refs.qualitySelect.value = state.automation!.quality;
+
+    const automationQuality = state.automation.quality || "best";
+    if ([...refs.qualitySelect.options].some((o) => o.value === automationQuality)) {
+      refs.qualitySelect.value = automationQuality;
     }
-    state.currentSavePath = state.automation!.savePath;
-    refs.savePathInput.value = state.automation!.savePath;
+
+    state.currentSavePath = state.automation.savePath;
+    refs.savePathInput.value = state.automation.savePath;
     setFlashMessage("Automation loaded.", "success");
-    if (!state.automation!.autoStart) return;
+
+    if (!state.automation.autoStart) {
+      return;
+    }
+
     refs.downloadButton.disabled = true;
-    await window.youtubeDownloader.startDownload({
-      url: state.automation!.url,
+    const result = await window.youtubeDownloader.startDownload({
+      url: state.automation.url,
       title: state.metadata.title,
       format: state.selectedFormat,
       quality: refs.qualitySelect.value,
       savePath: state.currentSavePath
     });
+
+    if (state.automation.cancelAfterMs && state.automation.cancelAfterMs > 0) {
+      setTimeout(() => {
+        void window.youtubeDownloader.cancelDownload(result.taskId);
+      }, state.automation.cancelAfterMs);
+    }
+
     setFlashMessage("Automation started download.", "success");
     state.currentSavePath = "";
     refs.savePathInput.value = "";
@@ -555,14 +708,15 @@ function resetCurrentSavePath(): void {
   refs.savePathInput.value = "";
 }
 
-async function startPendingEntry(entry: PendingEntry): Promise<void> {
-  await window.youtubeDownloader.startDownload({
+async function startPendingEntry(entry: PendingEntry): Promise<string> {
+  const result = await window.youtubeDownloader.startDownload({
     url: entry.url,
     title: entry.title,
     format: entry.format,
     quality: entry.quality,
     savePath: entry.savePath
   });
+  return result.taskId;
 }
 
 async function handleDownload(): Promise<void> {
@@ -732,6 +886,7 @@ function wireRefs(): void {
   refs.videoTitle = document.getElementById("videoTitle")!;
   refs.videoUploader = document.getElementById("videoUploader")!;
   refs.videoDuration = document.getElementById("videoDuration")!;
+  refs.inlineDownloadStatus = document.getElementById("inlineDownloadStatus")!;
   refs.activeSection = document.getElementById("activeSection")!;
   refs.activeDownloads = document.getElementById("activeDownloads")!;
   refs.queueSection = document.getElementById("queueSection")!;

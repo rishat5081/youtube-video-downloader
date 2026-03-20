@@ -1,0 +1,361 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+IFS=$'\n\t'
+
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+DEFAULT_NODE_VERSION="25.8.1"
+NODE_INDEX_URL="https://nodejs.org/dist/index.json"
+
+log() {
+  printf '\n[%s] %s\n' "application.start" "$1"
+}
+
+warn() {
+  printf '\n[%s] WARNING: %s\n' "application.start" "$1" >&2
+}
+
+fail() {
+  printf '\n[%s] ERROR: %s\n' "application.start" "$1" >&2
+  exit 1
+}
+
+has_cmd() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+ensure_local_bin_on_path() {
+  export PATH="$HOME/.local/bin:$PATH"
+}
+
+run_with_sudo() {
+  if [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
+    "$@"
+    return
+  fi
+
+  if has_cmd sudo; then
+    sudo "$@"
+    return
+  fi
+
+  fail "This step requires elevated privileges, but sudo is not available."
+}
+
+detect_platform() {
+  local uname_value
+  uname_value="$(uname -s)"
+
+  case "$uname_value" in
+    Darwin)
+      printf '%s' "macos"
+      ;;
+    Linux)
+      printf '%s' "linux"
+      ;;
+    CYGWIN* | MINGW* | MSYS*)
+      printf '%s' "windows"
+      ;;
+    *)
+      fail "Unsupported platform: $uname_value"
+      ;;
+  esac
+}
+
+detect_linux_distro() {
+  if [[ -f /etc/os-release ]]; then
+    # shellcheck disable=SC1091
+    . /etc/os-release
+    printf '%s' "${ID:-linux}"
+    return
+  fi
+
+  printf '%s' "linux"
+}
+
+fetch_latest_node_version() {
+  if has_cmd curl; then
+    local latest_version
+    latest_version="$(
+      curl -fsSL "$NODE_INDEX_URL" \
+        | sed -n 's/.*"version":"v\([^"]*\)".*/\1/p' \
+        | head -n 1
+    )"
+
+    if [[ -n "$latest_version" ]]; then
+      printf '%s' "$latest_version"
+      return
+    fi
+  fi
+
+  printf '%s' "$DEFAULT_NODE_VERSION"
+}
+
+detect_pnpm_version() {
+  local version
+  version="$(sed -n 's/.*"packageManager":[[:space:]]*"pnpm@\([^"]*\)".*/\1/p' "$PROJECT_ROOT/package.json" | head -n 1)"
+  printf '%s' "${version:-10}"
+}
+
+install_homebrew() {
+  if has_cmd brew; then
+    return
+  fi
+
+  log "Installing Homebrew"
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+  if [[ -x /opt/homebrew/bin/brew ]]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+  elif [[ -x /usr/local/bin/brew ]]; then
+    eval "$(/usr/local/bin/brew shellenv)"
+  fi
+}
+
+ensure_curl_linux() {
+  local distro="$1"
+
+  case "$distro" in
+    ubuntu | debian | pop | linuxmint | elementary | zorin)
+      run_with_sudo apt-get update
+      run_with_sudo apt-get install -y curl ca-certificates
+      ;;
+    arch | manjaro | endeavouros)
+      run_with_sudo pacman -Sy --noconfirm curl ca-certificates
+      ;;
+    fedora | rhel | centos | rocky | almalinux)
+      run_with_sudo dnf install -y curl ca-certificates
+      ;;
+    opensuse* | sles)
+      run_with_sudo zypper install -y curl ca-certificates
+      ;;
+    *)
+      if ! has_cmd curl; then
+        fail "curl is required to install the toolchain on Linux."
+      fi
+      ;;
+  esac
+}
+
+load_nvm_unix() {
+  ensure_local_bin_on_path
+
+  if [[ -s "$NVM_DIR/nvm.sh" ]]; then
+    # shellcheck disable=SC1090
+    . "$NVM_DIR/nvm.sh"
+  fi
+}
+
+install_nvm_unix() {
+  if [[ -s "$NVM_DIR/nvm.sh" ]]; then
+    load_nvm_unix
+    return
+  fi
+
+  log "Installing nvm"
+  curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+  load_nvm_unix
+}
+
+ensure_node_unix() {
+  local node_version="$1"
+
+  install_nvm_unix
+
+  if ! has_cmd nvm; then
+    fail "nvm is not available after installation."
+  fi
+
+  log "Installing and using Node.js $node_version via nvm"
+  nvm install "$node_version"
+  nvm alias default "$node_version"
+  nvm use "$node_version"
+}
+
+ensure_node_windows() {
+  local node_version="$1"
+
+  if ! has_cmd nvm; then
+    if has_cmd winget; then
+      log "Installing nvm-windows with winget"
+      winget install --id CoreyButler.NVMforWindows -e --accept-package-agreements --accept-source-agreements || true
+    elif has_cmd choco; then
+      log "Installing nvm-windows with Chocolatey"
+      choco install -y nvm || true
+    else
+      warn "Neither winget nor choco is available. Falling back to direct Node.js installation."
+    fi
+  fi
+
+  if has_cmd nvm; then
+    log "Installing and using Node.js $node_version via nvm-windows"
+    nvm install "$node_version" || true
+    nvm use "$node_version" || true
+  fi
+
+  if ! has_cmd node; then
+    if has_cmd winget; then
+      log "Installing latest Node.js current with winget"
+      winget install --id OpenJS.NodeJS -e --accept-package-agreements --accept-source-agreements || winget install --id OpenJS.NodeJS.LTS -e --accept-package-agreements --accept-source-agreements
+    elif has_cmd choco; then
+      log "Installing Node.js with Chocolatey"
+      choco install -y nodejs
+    else
+      fail "Could not install Node.js automatically on Windows. Install Node.js and rerun application.start."
+    fi
+  fi
+}
+
+ensure_pnpm() {
+  local pnpm_version="$1"
+
+  if has_cmd corepack; then
+    log "Enabling corepack and pnpm@$pnpm_version"
+    corepack enable
+    corepack prepare "pnpm@$pnpm_version" --activate
+    return
+  fi
+
+  if has_cmd npm; then
+    log "Installing pnpm@$pnpm_version globally via npm"
+    npm install -g "pnpm@$pnpm_version"
+    return
+  fi
+
+  fail "npm is not available, so pnpm could not be installed."
+}
+
+ensure_tooling_macos() {
+  install_homebrew
+  log "Installing yt-dlp and ffmpeg with Homebrew"
+  brew install yt-dlp ffmpeg
+}
+
+ensure_tooling_linux() {
+  local distro="$1"
+
+  ensure_local_bin_on_path
+
+  case "$distro" in
+    ubuntu | debian | pop | linuxmint | elementary | zorin)
+      log "Installing ffmpeg and Python tooling with apt"
+      run_with_sudo apt-get update
+      run_with_sudo apt-get install -y ffmpeg python3 python3-pip
+      if ! has_cmd yt-dlp; then
+        log "Installing yt-dlp"
+        run_with_sudo apt-get install -y yt-dlp || python3 -m pip install --user --upgrade yt-dlp || python3 -m pip install --user --break-system-packages --upgrade yt-dlp
+      fi
+      ;;
+    arch | manjaro | endeavouros)
+      log "Installing yt-dlp and ffmpeg with pacman"
+      run_with_sudo pacman -Sy --noconfirm yt-dlp ffmpeg
+      ;;
+    fedora | rhel | centos | rocky | almalinux)
+      log "Installing ffmpeg and yt-dlp dependencies with dnf"
+      run_with_sudo dnf install -y ffmpeg python3-pip
+      if ! has_cmd yt-dlp; then
+        python3 -m pip install --user --upgrade yt-dlp
+      fi
+      ;;
+    opensuse* | sles)
+      log "Installing yt-dlp and ffmpeg with zypper"
+      run_with_sudo zypper install -y yt-dlp ffmpeg python3-pip
+      ;;
+    *)
+      warn "Unsupported Linux distro '$distro'. Attempting Python-based yt-dlp installation only."
+      if has_cmd python3; then
+        python3 -m pip install --user --upgrade yt-dlp || true
+      fi
+      ;;
+  esac
+}
+
+ensure_tooling_windows() {
+  if has_cmd winget; then
+    log "Installing yt-dlp and ffmpeg with winget"
+    winget install --id yt-dlp.yt-dlp -e --accept-package-agreements --accept-source-agreements || true
+    winget install --id Gyan.FFmpeg -e --accept-package-agreements --accept-source-agreements || true
+    return
+  fi
+
+  if has_cmd choco; then
+    log "Installing yt-dlp and ffmpeg with Chocolatey"
+    choco install -y yt-dlp ffmpeg || true
+    return
+  fi
+
+  warn "Could not install yt-dlp and ffmpeg automatically on Windows because neither winget nor choco is available."
+}
+
+assert_required_commands() {
+  local missing=()
+
+  has_cmd node || missing+=("node")
+  has_cmd pnpm || missing+=("pnpm")
+  has_cmd yt-dlp || missing+=("yt-dlp")
+  has_cmd ffmpeg || missing+=("ffmpeg")
+
+  if (( ${#missing[@]} > 0 )); then
+    fail "Required commands are still missing after setup: ${missing[*]}"
+  fi
+}
+
+main() {
+  local platform
+  local distro=""
+  local node_version
+  local pnpm_version
+
+  platform="$(detect_platform)"
+
+  case "$platform" in
+    linux)
+      distro="$(detect_linux_distro)"
+      log "Detected platform: $platform ($distro)"
+      ensure_curl_linux "$distro"
+      ;;
+    *)
+      log "Detected platform: $platform"
+      ;;
+  esac
+
+  node_version="$(fetch_latest_node_version)"
+  pnpm_version="$(detect_pnpm_version)"
+
+  log "Using latest official Node.js current release: $node_version"
+  log "Using pnpm version: $pnpm_version"
+
+  case "$platform" in
+    macos)
+      ensure_node_unix "$node_version"
+      ensure_pnpm "$pnpm_version"
+      ensure_tooling_macos
+      ;;
+    linux)
+      ensure_node_unix "$node_version"
+      ensure_pnpm "$pnpm_version"
+      ensure_tooling_linux "$distro"
+      ;;
+    windows)
+      ensure_node_windows "$node_version"
+      ensure_pnpm "$pnpm_version"
+      ensure_tooling_windows
+      ;;
+  esac
+
+  assert_required_commands
+
+  cd "$PROJECT_ROOT"
+
+  log "Installing project dependencies with pnpm"
+  pnpm install
+
+  log "Building the project"
+  pnpm build
+
+  log "Starting the application"
+  pnpm exec electron .
+}
+
+main "$@"

@@ -13,6 +13,7 @@ TypeScript 5.9 | Electron 30+ | Node.js 20+ | pnpm 10+ | yt-dlp | ffmpeg | ESLin
 ## Commands
 
 ```
+./application.start   Install toolchain, deps, build, and launch app
 pnpm build          Compile TS to dist/ + copy static assets
 pnpm start          Build + launch app
 pnpm test           Run tests (tsx --test)

@@ -17,14 +17,8 @@ Thank you for your interest in contributing! This guide will help you get starte
 git clone https://github.com/rishat5081/youtube-video-downloader.git
 cd youtube-video-downloader
 
-# Enable corepack for pnpm
-corepack enable
-
-# Install dependencies
-pnpm install
-
-# Start the app
-pnpm start
+# Install the toolchain, dependencies, build, and launch
+./application.start
 ```
 
 ## Development Workflow
@@ -64,19 +58,20 @@ ci: add dependency review workflow
 
 ## Available Scripts
 
-| Script               | Description                                |
-| -------------------- | ------------------------------------------ |
-| `pnpm build`         | Compile TypeScript + copy static assets    |
-| `pnpm start`         | Build + launch the Electron app            |
-| `pnpm dev`           | Build + launch in development mode         |
-| `pnpm test`          | Run all tests (via tsx)                    |
-| `pnpm test:coverage` | Run tests with coverage report             |
-| `pnpm lint`          | Run ESLint                                 |
-| `pnpm lint:fix`      | Run ESLint with auto-fix                   |
-| `pnpm format`        | Check Prettier formatting                  |
-| `pnpm format:fix`    | Fix Prettier formatting                    |
-| `pnpm check`         | Type-check all TypeScript (tsc --noEmit)   |
-| `pnpm validate`      | Run all checks (typecheck + lint + format) |
+| Script                | Description                                |
+| --------------------- | ------------------------------------------ |
+| `./application.start` | Install toolchain, deps, build, and launch |
+| `pnpm build`          | Compile TypeScript + copy static assets    |
+| `pnpm start`          | Build + launch the Electron app            |
+| `pnpm dev`            | Build + launch in development mode         |
+| `pnpm test`           | Run all tests (via tsx)                    |
+| `pnpm test:coverage`  | Run tests with coverage report             |
+| `pnpm lint`           | Run ESLint                                 |
+| `pnpm lint:fix`       | Run ESLint with auto-fix                   |
+| `pnpm format`         | Check Prettier formatting                  |
+| `pnpm format:fix`     | Fix Prettier formatting                    |
+| `pnpm check`          | Type-check all TypeScript (tsc --noEmit)   |
+| `pnpm validate`       | Run all checks (typecheck + lint + format) |
 
 ## Project Structure
 
@@ -95,8 +90,13 @@ youtube-video-downloader/
 │   └── utils.test.ts    # Unit tests for utility functions
 ├── scripts/
 │   └── copy-static.js   # Copies HTML/CSS to dist/
+├── application.start    # Cross-platform bootstrap + launch script
 ├── dist/                # Compiled output (gitignored)
-├── tsconfig.json        # TypeScript config
+├── tsconfig.base.json   # Shared TypeScript compiler options
+├── tsconfig.main.json   # Main/preload TypeScript build
+├── tsconfig.renderer.json # Renderer TypeScript build
+├── tsconfig.test.json   # Test type-check config
+├── tsconfig.json        # TypeScript project references
 └── .github/
     └── workflows/       # CI/CD pipelines
 ```
