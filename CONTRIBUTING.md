@@ -64,48 +64,56 @@ ci: add dependency review workflow
 
 ## Available Scripts
 
-| Script               | Description                             |
-| -------------------- | --------------------------------------- |
-| `pnpm start`         | Launch the Electron app                 |
-| `pnpm dev`           | Launch in development mode              |
-| `pnpm test`          | Run all tests                           |
-| `pnpm test:coverage` | Run tests with coverage report          |
-| `pnpm lint`          | Run ESLint                              |
-| `pnpm lint:fix`      | Run ESLint with auto-fix                |
-| `pnpm format`        | Check Prettier formatting               |
-| `pnpm format:fix`    | Fix Prettier formatting                 |
-| `pnpm check`         | Syntax-check all JavaScript files       |
-| `pnpm validate`      | Run all checks (syntax + lint + format) |
+| Script               | Description                                |
+| -------------------- | ------------------------------------------ |
+| `pnpm build`         | Compile TypeScript + copy static assets    |
+| `pnpm start`         | Build + launch the Electron app            |
+| `pnpm dev`           | Build + launch in development mode         |
+| `pnpm test`          | Run all tests (via tsx)                    |
+| `pnpm test:coverage` | Run tests with coverage report             |
+| `pnpm lint`          | Run ESLint                                 |
+| `pnpm lint:fix`      | Run ESLint with auto-fix                   |
+| `pnpm format`        | Check Prettier formatting                  |
+| `pnpm format:fix`    | Fix Prettier formatting                    |
+| `pnpm check`         | Type-check all TypeScript (tsc --noEmit)   |
+| `pnpm validate`      | Run all checks (typecheck + lint + format) |
 
 ## Project Structure
 
 ```
 youtube-video-downloader/
-├── main.js              # Electron main process
-├── preload.js           # Context bridge (secure IPC)
+├── main.ts              # Electron main process
+├── preload.ts           # Context bridge (secure IPC)
 ├── lib/
-│   └── utils.js         # Shared pure utility functions
+│   └── utils.ts         # Shared pure utility functions
 ├── src/
+│   ├── types.ts         # Shared TypeScript interfaces
 │   ├── index.html       # Application UI
 │   ├── styles.css       # Styling (dark theme)
-│   └── renderer.js      # Renderer process logic
+│   └── renderer.ts      # Renderer process logic
 ├── tests/
-│   └── utils.test.js    # Unit tests for utility functions
+│   └── utils.test.ts    # Unit tests for utility functions
+├── scripts/
+│   └── copy-static.js   # Copies HTML/CSS to dist/
+├── dist/                # Compiled output (gitignored)
+├── tsconfig.json        # TypeScript config
 └── .github/
     └── workflows/       # CI/CD pipelines
 ```
 
 ## Code Style
 
-- **ESLint** for JavaScript linting (flat config, ES2024)
+- **TypeScript** with `strict: true` — all code is type-checked
+- **ESLint** with `typescript-eslint` for linting (flat config, ES2024)
 - **Prettier** for code formatting
 - No `var` — use `const` or `let`
 - Strict equality (`===`) always
 - All HTML output must use `escapeHtml()` to prevent XSS
+- Add types to all function parameters and return values
 
 ## Testing
 
-We use Node.js built-in test runner (`node:test`). Tests are in `tests/`:
+We use Node.js built-in test runner (`node:test`) with `tsx` to run TypeScript directly. Tests are in `tests/`:
 
 ```bash
 # Run all tests
@@ -115,7 +123,7 @@ pnpm test
 pnpm test:coverage
 ```
 
-When adding new utility functions to `lib/utils.js`, add corresponding tests in `tests/utils.test.js`.
+When adding new utility functions to `lib/utils.ts`, add corresponding tests in `tests/utils.test.ts`.
 
 ## Security
 

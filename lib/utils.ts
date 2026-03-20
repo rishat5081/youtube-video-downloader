@@ -1,11 +1,15 @@
-"use strict";
+import path from "path";
+import type {
+  FormatArgInput,
+  FormatFilter,
+  MetadataPayload,
+  ProgressData,
+  QualityOption,
+  YtDlpFormat,
+  YtDlpInfo
+} from "../src/types";
 
-/**
- * Pure utility functions extracted for testability.
- * Used by main.js (Electron main process).
- */
-
-function sanitizeFilename(value) {
+export function sanitizeFilename(value: string | null | undefined): string {
   return (
     (value || "download")
       .replace(/[<>:"/\\|?*\u0000-\u001f]/g, " ")
@@ -15,26 +19,25 @@ function sanitizeFilename(value) {
   );
 }
 
-function ensureExtension(filePath, extension) {
-  const path = require("path");
+export function ensureExtension(filePath: string, extension: string): string {
   if (path.extname(filePath).toLowerCase() === `.${extension}`) {
     return filePath;
   }
   return `${filePath.replace(/\.+$/, "")}.${extension}`;
 }
 
-function formatFilterFor(extension) {
+export function formatFilterFor(extension: string): FormatFilter {
   return {
     name: `${extension.toUpperCase()} file`,
     extensions: [extension]
   };
 }
 
-function toUniqueSortedNumbers(values) {
+export function toUniqueSortedNumbers(values: number[]): number[] {
   return [...new Set(values.filter((value) => Number.isFinite(value) && value > 0))].sort((a, b) => b - a);
 }
 
-function extractVideoQualities(formats, preferredExt) {
+export function extractVideoQualities(formats: YtDlpFormat[], preferredExt?: string): QualityOption[] {
   const matching = formats.filter((format) => {
     return (
       format.vcodec &&
@@ -44,7 +47,7 @@ function extractVideoQualities(formats, preferredExt) {
     );
   });
 
-  const heights = toUniqueSortedNumbers(matching.map((format) => format.height));
+  const heights = toUniqueSortedNumbers(matching.map((format) => format.height!));
   const list = heights.map((height) => ({
     value: String(height),
     label: `${height}p`
@@ -53,7 +56,7 @@ function extractVideoQualities(formats, preferredExt) {
   return [{ value: "best", label: "Best available" }, ...list];
 }
 
-function extractAudioQualities(formats) {
+export function extractAudioQualities(formats: YtDlpFormat[]): QualityOption[] {
   const bitrates = toUniqueSortedNumbers(formats.map((format) => Number(format.abr)));
   const normalized = bitrates.filter((bitrate) => bitrate >= 64).slice(0, 6);
 
@@ -70,7 +73,7 @@ function extractAudioQualities(formats) {
   ];
 }
 
-function buildFormatArguments({ format, quality }) {
+export function buildFormatArguments({ format, quality }: FormatArgInput): string[] {
   if (format === "mp3" || format === "wav") {
     const args = ["--format", "bestaudio/best", "--extract-audio", "--audio-format", format];
     if (quality !== "best") {
@@ -101,7 +104,7 @@ function buildFormatArguments({ format, quality }) {
   ];
 }
 
-function parseProgressLine(line) {
+export function parseProgressLine(line: string): ProgressData | null {
   if (!line.startsWith("download:")) {
     return null;
   }
@@ -127,7 +130,7 @@ function parseProgressLine(line) {
   };
 }
 
-function buildMetadataPayload(url, info) {
+export function buildMetadataPayload(url: string, info: YtDlpInfo): MetadataPayload {
   const formats = Array.isArray(info.formats) ? info.formats : [];
   const safeTitle = sanitizeFilename(info.title || "download");
 
@@ -146,7 +149,7 @@ function buildMetadataPayload(url, info) {
   };
 }
 
-function getDurationLabel(seconds) {
+export function getDurationLabel(seconds: number | null | undefined): string {
   if (!seconds) return "0:00";
   const total = Number(seconds);
   const h = Math.floor(total / 3600);
@@ -158,7 +161,7 @@ function getDurationLabel(seconds) {
     .join(":");
 }
 
-function getFileSizeLabel(bytes) {
+export function getFileSizeLabel(bytes: number | null | undefined): string {
   if (!bytes) return "0 B";
   const units = ["B", "KB", "MB", "GB", "TB"];
   let value = bytes;
@@ -170,11 +173,11 @@ function getFileSizeLabel(bytes) {
   return `${value.toFixed(value >= 100 || i === 0 ? 0 : 1)} ${units[i]}`;
 }
 
-function getSpeedLabel(bps) {
+export function getSpeedLabel(bps: number | null | undefined): string {
   return bps ? `${getFileSizeLabel(bps)}/s` : "---";
 }
 
-function getEtaLabel(seconds) {
+export function getEtaLabel(seconds: number | null | undefined): string {
   if (!seconds && seconds !== 0) return "---";
   if (seconds <= 0) return "finishing";
   const m = Math.floor(seconds / 60);
@@ -182,7 +185,7 @@ function getEtaLabel(seconds) {
   return m > 0 ? `${m}m ${s}s` : `${s}s`;
 }
 
-function escapeHtml(value) {
+export function escapeHtml(value: string | number | null | undefined): string {
   return String(value)
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
@@ -190,20 +193,3 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
 }
-
-module.exports = {
-  sanitizeFilename,
-  ensureExtension,
-  formatFilterFor,
-  toUniqueSortedNumbers,
-  extractVideoQualities,
-  extractAudioQualities,
-  buildFormatArguments,
-  parseProgressLine,
-  buildMetadataPayload,
-  getDurationLabel,
-  getFileSizeLabel,
-  getSpeedLabel,
-  getEtaLabel,
-  escapeHtml
-};

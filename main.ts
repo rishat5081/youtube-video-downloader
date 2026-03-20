@@ -1,30 +1,41 @@
-const { app, BrowserWindow, dialog, ipcMain, shell } = require("electron");
-const { spawn } = require("child_process");
-const crypto = require("crypto");
-const fs = require("fs/promises");
-const path = require("path");
-const {
+import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
+import { spawn, ChildProcess, SpawnOptions } from "child_process";
+import crypto from "crypto";
+import fs from "fs/promises";
+import path from "path";
+import {
   sanitizeFilename,
   ensureExtension,
   formatFilterFor,
   buildFormatArguments,
   parseProgressLine,
   buildMetadataPayload
-} = require("./lib/utils");
+} from "./lib/utils";
+import type {
+  AutomationConfig,
+  BrowseSavePathPayload,
+  DownloadEvent,
+  DownloadTask,
+  HistoryEntry,
+  ProgressData,
+  ProgressSnapshot,
+  StartDownloadPayload,
+  ToolStatus
+} from "./src/types";
 
-const activeDownloads = new Map();
+const activeDownloads = new Map<string, DownloadTask>();
 
-let mainWindow;
-let historyFilePath;
-let historyEntries = [];
-let toolStatus = {
+let mainWindow: BrowserWindow | null;
+let historyFilePath: string;
+let historyEntries: HistoryEntry[] = [];
+let toolStatus: ToolStatus = {
   ytDlpPath: "yt-dlp",
   ffmpegPath: "ffmpeg",
   ytDlpAvailable: false,
   ffmpegAvailable: false
 };
 
-function getAutomationConfig() {
+function getAutomationConfig(): AutomationConfig | null {
   const autoUrl = process.env.AUTO_URL || "";
   const autoSavePath = process.env.AUTO_SAVE_PATH || "";
 
@@ -41,7 +52,7 @@ function getAutomationConfig() {
   };
 }
 
-function createWindow() {
+function createWindow(): void {
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 980,
@@ -59,7 +70,7 @@ function createWindow() {
   mainWindow.loadFile(path.join(__dirname, "src/index.html"));
 }
 
-async function ensureHistoryFile() {
+async function ensureHistoryFile(): Promise<void> {
   historyFilePath = path.join(app.getPath("userData"), "download-history.json");
   await fs.mkdir(path.dirname(historyFilePath), { recursive: true });
 
@@ -70,7 +81,7 @@ async function ensureHistoryFile() {
   }
 }
 
-async function loadHistory() {
+async function loadHistory(): Promise<void> {
   try {
     const contents = await fs.readFile(historyFilePath, "utf8");
     const parsed = JSON.parse(contents);
@@ -80,18 +91,22 @@ async function loadHistory() {
   }
 }
 
-async function saveHistory() {
+async function saveHistory(): Promise<void> {
   await fs.writeFile(historyFilePath, JSON.stringify(historyEntries, null, 2), "utf8");
 }
 
-async function prependHistory(entry) {
+async function prependHistory(entry: HistoryEntry): Promise<void> {
   historyEntries = [entry, ...historyEntries].slice(0, 200);
   await saveHistory();
 }
 
-function runCommand(command, args, options = {}) {
+function runCommand(
+  command: string,
+  args: string[],
+  options: SpawnOptions = {}
+): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, {
+    const child: ChildProcess = spawn(command, args, {
       stdio: ["ignore", "pipe", "pipe"],
       ...options
     });
@@ -99,11 +114,11 @@ function runCommand(command, args, options = {}) {
     let stdout = "";
     let stderr = "";
 
-    child.stdout.on("data", (chunk) => {
+    child.stdout!.on("data", (chunk: Buffer) => {
       stdout += chunk.toString();
     });
 
-    child.stderr.on("data", (chunk) => {
+    child.stderr!.on("data", (chunk: Buffer) => {
       stderr += chunk.toString();
     });
 
@@ -119,7 +134,7 @@ function runCommand(command, args, options = {}) {
   });
 }
 
-async function locateBinary(binaryName) {
+async function locateBinary(binaryName: string): Promise<string> {
   const locator = process.platform === "win32" ? "where" : "which";
 
   try {
@@ -134,7 +149,7 @@ async function locateBinary(binaryName) {
   }
 }
 
-async function isBinaryAvailable(binaryPath, versionArg = "--version") {
+async function isBinaryAvailable(binaryPath: string, versionArg: string = "--version"): Promise<boolean> {
   try {
     await runCommand(binaryPath, [versionArg]);
     return true;
@@ -143,7 +158,7 @@ async function isBinaryAvailable(binaryPath, versionArg = "--version") {
   }
 }
 
-async function detectTools() {
+async function detectTools(): Promise<ToolStatus> {
   const ytDlpPath = await locateBinary("yt-dlp");
   const ffmpegPath = await locateBinary("ffmpeg");
 
@@ -155,7 +170,7 @@ async function detectTools() {
   };
 }
 
-async function inspectUrl(url) {
+async function inspectUrl(url: string): Promise<ReturnType<typeof buildMetadataPayload>> {
   if (!toolStatus.ytDlpAvailable) {
     throw new Error("yt-dlp is not available in PATH.");
   }
@@ -172,7 +187,7 @@ async function inspectUrl(url) {
   return buildMetadataPayload(url, info);
 }
 
-function splitLines(buffer, incomingChunk, onLine) {
+function splitLines(buffer: string, incomingChunk: string, onLine: (line: string) => void): string {
   const merged = buffer + incomingChunk;
   const lines = merged.split(/\r?\n/);
   const remainder = lines.pop() || "";
@@ -187,7 +202,7 @@ function splitLines(buffer, incomingChunk, onLine) {
   return remainder;
 }
 
-function sendDownloadEvent(payload) {
+function sendDownloadEvent(payload: DownloadEvent): void {
   if (process.env.AUTOMATION_LOG === "1") {
     try {
       console.log(`AUTOMATION_EVENT ${JSON.stringify(payload)}`);
@@ -201,7 +216,7 @@ function sendDownloadEvent(payload) {
   }
 }
 
-function buildProgressSnapshot(task, progress) {
+function buildProgressSnapshot(task: DownloadTask, progress: ProgressData): ProgressSnapshot {
   return {
     id: task.id,
     title: task.title,
@@ -219,7 +234,7 @@ function buildProgressSnapshot(task, progress) {
   };
 }
 
-async function recordHistory(task, status, errorMessage = "") {
+async function recordHistory(task: DownloadTask, status: string, errorMessage: string = ""): Promise<void> {
   let fileSize = 0;
 
   if (status === "completed") {
@@ -231,7 +246,7 @@ async function recordHistory(task, status, errorMessage = "") {
     }
   }
 
-  const entry = {
+  const entry: HistoryEntry = {
     id: task.id,
     title: task.title,
     url: task.url,
@@ -249,7 +264,7 @@ async function recordHistory(task, status, errorMessage = "") {
   sendDownloadEvent({ type: "history-updated", entry });
 }
 
-async function startDownload(downloadOptions) {
+async function startDownload(downloadOptions: StartDownloadPayload): Promise<string> {
   if (!toolStatus.ytDlpAvailable) {
     throw new Error("yt-dlp is not available in PATH.");
   }
@@ -282,7 +297,7 @@ async function startDownload(downloadOptions) {
     stdio: ["ignore", "pipe", "pipe"]
   });
 
-  const task = {
+  const task: DownloadTask = {
     id: taskId,
     title: downloadOptions.title,
     url: downloadOptions.url,
@@ -300,6 +315,7 @@ async function startDownload(downloadOptions) {
   sendDownloadEvent({
     type: "download-started",
     task: buildProgressSnapshot(task, {
+      status: "starting",
       percent: 0,
       speed: 0,
       eta: 0,
@@ -312,7 +328,7 @@ async function startDownload(downloadOptions) {
   let stderrBuffer = "";
   let lastErrorLine = "";
 
-  const handleLine = (line) => {
+  const handleLine = (line: string): void => {
     if (line.startsWith("__FINAL_PATH__:")) {
       task.outputPath = line.replace("__FINAL_PATH__:", "").trim();
       return;
@@ -335,15 +351,15 @@ async function startDownload(downloadOptions) {
     });
   };
 
-  child.stdout.on("data", (chunk) => {
+  child.stdout!.on("data", (chunk: Buffer) => {
     stdoutBuffer = splitLines(stdoutBuffer, chunk.toString(), handleLine);
   });
 
-  child.stderr.on("data", (chunk) => {
+  child.stderr!.on("data", (chunk: Buffer) => {
     stderrBuffer = splitLines(stderrBuffer, chunk.toString(), handleLine);
   });
 
-  child.on("error", async (error) => {
+  child.on("error", async (error: Error) => {
     if (task.settled) {
       return;
     }
@@ -354,6 +370,7 @@ async function startDownload(downloadOptions) {
     sendDownloadEvent({
       type: "download-finished",
       task: buildProgressSnapshot(task, {
+        status: task.status,
         percent: 0,
         speed: 0,
         eta: 0,
@@ -365,7 +382,7 @@ async function startDownload(downloadOptions) {
     await recordHistory(task, task.status, error.message);
   });
 
-  child.on("close", async (code) => {
+  child.on("close", async (code: number | null) => {
     if (task.settled) {
       return;
     }
@@ -380,6 +397,7 @@ async function startDownload(downloadOptions) {
     sendDownloadEvent({
       type: "download-finished",
       task: buildProgressSnapshot(task, {
+        status: finalStatus,
         percent: finalStatus === "completed" ? 100 : 0,
         speed: 0,
         eta: 0,
@@ -395,7 +413,7 @@ async function startDownload(downloadOptions) {
   return taskId;
 }
 
-function cancelDownload(taskId) {
+function cancelDownload(taskId: string): boolean {
   const task = activeDownloads.get(taskId);
 
   if (!task) {
@@ -416,13 +434,13 @@ ipcMain.handle("app:get-bootstrap", async () => {
   };
 });
 
-ipcMain.handle("downloads:inspect-url", async (_, url) => {
+ipcMain.handle("downloads:inspect-url", async (_, url: string) => {
   return inspectUrl(url);
 });
 
-ipcMain.handle("downloads:browse-save-path", async (_, payload) => {
+ipcMain.handle("downloads:browse-save-path", async (_, payload: BrowseSavePathPayload) => {
   const extension = payload.format || "mp4";
-  const result = await dialog.showSaveDialog(mainWindow, {
+  const result = await dialog.showSaveDialog(mainWindow!, {
     title: "Choose where to save the download",
     defaultPath: path.join(app.getPath("downloads"), `${sanitizeFilename(payload.suggestedFilename)}.${extension}`),
     buttonLabel: "Save Here",
@@ -438,17 +456,17 @@ ipcMain.handle("downloads:browse-save-path", async (_, payload) => {
   };
 });
 
-ipcMain.handle("downloads:start", async (_, payload) => {
+ipcMain.handle("downloads:start", async (_, payload: StartDownloadPayload) => {
   return {
     taskId: await startDownload(payload)
   };
 });
 
-ipcMain.handle("downloads:cancel", async (_, taskId) => {
+ipcMain.handle("downloads:cancel", async (_, taskId: string) => {
   return cancelDownload(taskId);
 });
 
-ipcMain.handle("history:open-folder", async (_, filePath) => {
+ipcMain.handle("history:open-folder", async (_, filePath: string) => {
   shell.showItemInFolder(filePath);
   return true;
 });

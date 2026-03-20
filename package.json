@@ -2,13 +2,14 @@
   "name": "youtube-video-downloader",
   "version": "1.0.0",
   "description": "A modern Electron desktop app for downloading YouTube videos and audio with yt-dlp. Features real-time progress tracking, queue management, format/quality selection, and persistent download history.",
-  "main": "main.js",
+  "main": "dist/main.js",
   "scripts": {
-    "start": "electron .",
-    "dev": "electron .",
-    "check": "node --check main.js && node --check preload.js && node --check src/renderer.js && node --check lib/utils.js",
-    "test": "node --test tests/*.test.js",
-    "test:coverage": "node --test --experimental-test-coverage tests/*.test.js",
+    "build": "tsc && node scripts/copy-static.js",
+    "start": "pnpm build && electron .",
+    "dev": "pnpm build && electron .",
+    "check": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "test:coverage": "tsx --test --experimental-test-coverage tests/*.test.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --check .",
@@ -43,10 +44,14 @@
     "node": ">=20.0.0"
   },
   "devDependencies": {
+    "@types/node": "^25.5.0",
     "electron": ">=30 <42",
     "eslint": "^10.0.3",
     "globals": "^17.4.0",
-    "prettier": "^3.0.0"
+    "prettier": "^3.0.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.57.1"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

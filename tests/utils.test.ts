@@ -1,6 +1,6 @@
-const { describe, it } = require("node:test");
-const assert = require("node:assert/strict");
-const {
+import { describe, it } from "node:test";
+import assert from "node:assert/strict";
+import {
   sanitizeFilename,
   ensureExtension,
   formatFilterFor,
@@ -15,7 +15,7 @@ const {
   getSpeedLabel,
   getEtaLabel,
   escapeHtml
-} = require("../lib/utils");
+} from "../lib/utils";
 
 /* ---- sanitizeFilename ---- */
 
@@ -197,12 +197,12 @@ describe("parseProgressLine", () => {
   it("parses a valid progress line", () => {
     const line = "download:downloading|5242880|10485760|10485760| 50.0%|1048576|5";
     const result = parseProgressLine(line);
-    assert.equal(result.status, "downloading");
-    assert.equal(result.percent, 50);
-    assert.equal(result.downloadedBytes, 5242880);
-    assert.equal(result.totalBytes, 10485760);
-    assert.equal(result.speed, 1048576);
-    assert.equal(result.eta, 5);
+    assert.equal(result!.status, "downloading");
+    assert.equal(result!.percent, 50);
+    assert.equal(result!.downloadedBytes, 5242880);
+    assert.equal(result!.totalBytes, 10485760);
+    assert.equal(result!.speed, 1048576);
+    assert.equal(result!.eta, 5);
   });
 
   it("returns null for non-progress lines", () => {
@@ -217,8 +217,8 @@ describe("parseProgressLine", () => {
   it("handles finished status", () => {
     const line = "download:finished|10485760|10485760|10485760|100.0%|0|0";
     const result = parseProgressLine(line);
-    assert.equal(result.status, "finished");
-    assert.equal(result.percent, 100);
+    assert.equal(result!.status, "finished");
+    assert.equal(result!.percent, 100);
   });
 });
 

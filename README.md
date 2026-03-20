@@ -124,19 +124,24 @@ pnpm start
 
 ```
 youtube-video-downloader/
-├── main.js                          # Electron main process
-├── preload.js                       # Context bridge (secure IPC)
+├── main.ts                          # Electron main process
+├── preload.ts                       # Context bridge (secure IPC)
 ├── lib/
-│   └── utils.js                     # Pure utility functions (testable)
+│   └── utils.ts                     # Pure utility functions (testable)
 ├── src/
+│   ├── types.ts                     # Shared TypeScript interfaces
 │   ├── index.html                   # Application UI structure
 │   ├── styles.css                   # Dark theme with purple accent
-│   └── renderer.js                  # Renderer process (UI logic)
+│   └── renderer.ts                  # Renderer process (UI logic)
 ├── tests/
-│   └── utils.test.js                # Unit tests (Node.js test runner)
+│   └── utils.test.ts                # Unit tests (via tsx runner)
+├── scripts/
+│   └── copy-static.js               # Copies HTML/CSS to dist/
+├── dist/                            # Compiled output (gitignored)
+├── tsconfig.json                    # TypeScript compiler configuration
 ├── .github/
 │   ├── workflows/
-│   │   ├── ci.yml                   # Lint, format, syntax, test (Node 20+22)
+│   │   ├── ci.yml                   # Lint, format, typecheck, test (Node 20+22)
 │   │   ├── code-quality.yml         # Audit, license check, coverage
 │   │   ├── dependency-review.yml    # PR dependency scanning
 │   │   ├── pr-checks.yml           # Conventional commit validation
@@ -149,7 +154,7 @@ youtube-video-downloader/
 │   └── dependabot.yml               # Automated dependency updates
 ├── CONTRIBUTING.md                  # Contribution guidelines
 ├── LICENSE                          # MIT License
-├── eslint.config.js                 # ESLint 9 flat config
+├── eslint.config.mjs                # ESLint + typescript-eslint flat config
 ├── .prettierrc                      # Prettier configuration
 ├── .editorconfig                    # Editor settings
 ├── .nvmrc                           # Node.js version
@@ -161,7 +166,7 @@ youtube-video-downloader/
 ```mermaid
 graph TB
     subgraph Electron["Electron Application"]
-        subgraph Main["Main Process (main.js)"]
+        subgraph Main["Main Process (main.ts)"]
             WM[Window Manager]
             IPC[IPC Handlers]
             DM[Download Manager]
@@ -169,17 +174,17 @@ graph TB
             TD[Tool Detector]
         end
 
-        subgraph Preload["Preload (preload.js)"]
+        subgraph Preload["Preload (preload.ts)"]
             CB[Context Bridge]
         end
 
         subgraph Renderer["Renderer Process"]
             UI["UI Layer (index.html + styles.css)"]
-            SM["State Manager (renderer.js)"]
+            SM["State Manager (renderer.ts)"]
             EH[Event Handlers]
         end
 
-        subgraph Lib["Shared Library (lib/utils.js)"]
+        subgraph Lib["Shared Library (lib/utils.ts)"]
             FN[Pure Utility Functions]
         end
     end
@@ -324,10 +329,10 @@ graph LR
 
 | Process      | File           | Responsibilities                                                      |
 | ------------ | -------------- | --------------------------------------------------------------------- |
-| **Main**     | `main.js`      | Window management, yt-dlp spawning, file dialogs, history persistence |
-| **Preload**  | `preload.js`   | Secure IPC bridge via `contextBridge`                                 |
-| **Renderer** | `renderer.js`  | UI rendering, state management, user interaction handling             |
-| **Library**  | `lib/utils.js` | Pure utility functions shared across processes                        |
+| **Main**     | `main.ts`      | Window management, yt-dlp spawning, file dialogs, history persistence |
+| **Preload**  | `preload.ts`   | Secure IPC bridge via `contextBridge`                                 |
+| **Renderer** | `renderer.ts`  | UI rendering, state management, user interaction handling             |
+| **Library**  | `lib/utils.ts` | Pure utility functions shared across processes                        |
 
 ### Data Storage
 
@@ -339,42 +344,45 @@ graph LR
 
 ## Scripts
 
-| Script               | Description                             |
-| -------------------- | --------------------------------------- |
-| `pnpm start`         | Launch the application                  |
-| `pnpm dev`           | Launch in development mode              |
-| `pnpm test`          | Run unit tests                          |
-| `pnpm test:coverage` | Run tests with coverage report          |
-| `pnpm lint`          | Run ESLint                              |
-| `pnpm lint:fix`      | Run ESLint with auto-fix                |
-| `pnpm format`        | Check Prettier formatting               |
-| `pnpm format:fix`    | Fix Prettier formatting                 |
-| `pnpm check`         | Syntax-check all JavaScript files       |
-| `pnpm validate`      | Run all checks (syntax + lint + format) |
+| Script               | Description                                |
+| -------------------- | ------------------------------------------ |
+| `pnpm build`         | Compile TypeScript + copy static assets    |
+| `pnpm start`         | Build + launch the application             |
+| `pnpm dev`           | Build + launch in development mode         |
+| `pnpm test`          | Run unit tests (via tsx)                   |
+| `pnpm test:coverage` | Run tests with coverage report             |
+| `pnpm lint`          | Run ESLint                                 |
+| `pnpm lint:fix`      | Run ESLint with auto-fix                   |
+| `pnpm format`        | Check Prettier formatting                  |
+| `pnpm format:fix`    | Fix Prettier formatting                    |
+| `pnpm check`         | Type-check all TypeScript (tsc --noEmit)   |
+| `pnpm validate`      | Run all checks (typecheck + lint + format) |
 
 ## Tech Stack
 
 | Technology                                                        | Purpose                            |
 | ----------------------------------------------------------------- | ---------------------------------- |
+| [TypeScript](https://www.typescriptlang.org/)                     | Type-safe JavaScript superset      |
 | [Electron](https://www.electronjs.org/)                           | Cross-platform desktop framework   |
 | [yt-dlp](https://github.com/yt-dlp/yt-dlp)                        | YouTube video/audio extraction     |
 | [ffmpeg](https://ffmpeg.org/)                                     | Audio/video processing and merging |
-| [ESLint 9](https://eslint.org/)                                   | JavaScript linting (flat config)   |
+| [ESLint 10](https://eslint.org/)                                  | TypeScript linting (flat config)   |
 | [Prettier](https://prettier.io/)                                  | Code formatting                    |
+| [tsx](https://tsx.is/)                                            | TypeScript test runner (esbuild)   |
 | [Node.js Test Runner](https://nodejs.org/api/test.html)           | Unit testing (zero dependencies)   |
 | [GitHub Actions](https://github.com/features/actions)             | CI/CD pipelines                    |
 | [Dependabot](https://docs.github.com/en/code-security/dependabot) | Automated dependency updates       |
 
 ## CI/CD Pipelines
 
-| Workflow              | Trigger             | Jobs                                                            |
-| --------------------- | ------------------- | --------------------------------------------------------------- |
-| **CI**                | Push to `main`, PRs | Lint, Format, Syntax, Tests (Node 20+22 matrix), Security Audit |
-| **Code Quality**      | PRs, Weekly         | Security audit, License compliance, Test coverage               |
-| **Dependency Review** | PRs                 | Vulnerability scanning, License validation                      |
-| **PR Checks**         | PRs                 | Conventional commit title validation                            |
-| **Release**           | Tag `v*`            | Validate → Create GitHub Release with auto-generated notes      |
-| **Stale**             | Daily cron          | Auto-close stale issues and PRs (30 days inactive)              |
+| Workflow              | Trigger             | Jobs                                                               |
+| --------------------- | ------------------- | ------------------------------------------------------------------ |
+| **CI**                | Push to `main`, PRs | Lint, Format, TypeCheck, Tests (Node 20+22 matrix), Security Audit |
+| **Code Quality**      | PRs, Weekly         | Security audit, License compliance, Test coverage                  |
+| **Dependency Review** | PRs                 | Vulnerability scanning, License validation                         |
+| **PR Checks**         | PRs                 | Conventional commit title validation                               |
+| **Release**           | Tag `v*`            | Validate → Create GitHub Release with auto-generated notes         |
+| **Stale**             | Daily cron          | Auto-close stale issues and PRs (30 days inactive)                 |
 
 ## Supported Formats
 

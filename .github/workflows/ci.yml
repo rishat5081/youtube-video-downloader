@@ -65,7 +65,7 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Check JavaScript syntax
+      - name: Check TypeScript
         run: pnpm check
 
   test:
