@@ -46,7 +46,7 @@
   "devDependencies": {
     "@types/node": "^25.5.0",
     "electron": ">=30 <42",
-    "eslint": "^10.0.3",
+    "eslint": "^10.1.0",
     "globals": "^17.4.0",
     "prettier": "^3.0.0",
     "tsx": "^4.21.0",
