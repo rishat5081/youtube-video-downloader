@@ -12,6 +12,18 @@ import type {
   ToolStatus,
   YoutubeDownloaderAPI
 } from "./types";
+import {
+  getYouTubeVideoId,
+  normalizeHexColor,
+  mixHex,
+  rgbaFromHex,
+  getContrastColor,
+  buildSidebarItems as buildSidebarItemsPure,
+  filterByTab as filterByTabPure,
+  getQualityOptionsForFormat as getQualityOptionsForFormatPure,
+  DEFAULT_ACCENT
+} from "../lib/renderer-helpers.js";
+import type { PendingEntry, SidebarItem } from "../lib/renderer-helpers.js";
 
 declare global {
   interface Window {
@@ -19,26 +31,12 @@ declare global {
   }
 }
 
-interface PendingEntry {
-  id: string;
-  url: string;
-  title: string;
-  thumbnail: string;
-  format: string;
-  quality: string;
-  savePath: string;
-}
+type ThemeMode = "auto" | "dark" | "light";
+type ResolvedTheme = "dark" | "light";
 
-interface SidebarItem {
-  id: string;
-  title: string;
-  format: string;
-  quality: string;
-  status: string;
-  thumbnail: string;
-  time: string;
-  type: "active" | "queued" | "history";
-  path: string;
+interface AppearanceSettings {
+  themeMode: ThemeMode;
+  accentColor: string;
 }
 
 interface Refs {
@@ -66,6 +64,11 @@ interface Refs {
   queuedDownloads: HTMLElement;
   startAllQueuedButton: HTMLButtonElement;
   clearHistoryButton: HTMLButtonElement;
+  appearanceButton: HTMLButtonElement;
+  appearancePanel: HTMLElement;
+  themeModeButtons: HTMLElement;
+  accentPresetButtons: HTMLElement;
+  accentColorInput: HTMLInputElement;
   sidebarList: HTMLElement;
   sidebarNav: HTMLElement;
   ytdlpDot: HTMLElement;
@@ -89,7 +92,15 @@ interface State {
   automation: AutomationConfig | null;
   activeTab: string;
   selectedFormat: string;
+  appearance: AppearanceSettings;
+  resolvedTheme: ResolvedTheme;
 }
+
+const APPEARANCE_STORAGE_KEY = "youtube-downloader-appearance";
+const FALLBACK_APPEARANCE: AppearanceSettings = {
+  themeMode: "auto",
+  accentColor: DEFAULT_ACCENT
+};
 
 const state: State = {
   tools: null,
@@ -100,10 +111,13 @@ const state: State = {
   currentSavePath: "",
   automation: null,
   activeTab: "all",
-  selectedFormat: "mp4"
+  selectedFormat: "mp4",
+  appearance: FALLBACK_APPEARANCE,
+  resolvedTheme: "dark"
 };
 
 const refs = {} as Refs;
+let systemThemeQuery: MediaQueryList | null = null;
 
 /* ---- Helpers ---- */
 
@@ -152,30 +166,99 @@ function escapeHtml(value: string | number | null | undefined): string {
     .replaceAll("'", "&#39;");
 }
 
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "now";
-  if (mins < 60) return `${mins}m`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h`;
-  return `${Math.floor(hours / 24)}d`;
+function resolveTheme(themeMode: ThemeMode): ResolvedTheme {
+  if (themeMode === "dark" || themeMode === "light") {
+    return themeMode;
+  }
+
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
-function getYouTubeVideoId(url: string | null | undefined): string {
-  if (!url) return "";
-
+function loadAppearanceSettings(): AppearanceSettings {
   try {
-    const parsed = new URL(url);
-
-    if (parsed.hostname.includes("youtu.be")) {
-      return parsed.pathname.replace("/", "");
+    const raw = window.localStorage.getItem(APPEARANCE_STORAGE_KEY);
+    if (!raw) {
+      return { ...FALLBACK_APPEARANCE };
     }
 
-    return parsed.searchParams.get("v") || "";
+    const parsed = JSON.parse(raw) as Partial<AppearanceSettings>;
+    const themeMode: ThemeMode =
+      parsed.themeMode === "dark" || parsed.themeMode === "light" || parsed.themeMode === "auto"
+        ? parsed.themeMode
+        : FALLBACK_APPEARANCE.themeMode;
+
+    return {
+      themeMode,
+      accentColor: normalizeHexColor(parsed.accentColor)
+    };
   } catch {
-    return "";
+    return { ...FALLBACK_APPEARANCE };
   }
+}
+
+function persistAppearanceSettings(): void {
+  try {
+    window.localStorage.setItem(APPEARANCE_STORAGE_KEY, JSON.stringify(state.appearance));
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+function applyAppearance(): void {
+  const accentColor = normalizeHexColor(state.appearance.accentColor);
+  const resolvedTheme = resolveTheme(state.appearance.themeMode);
+  const root = document.documentElement;
+  const hoverColor = mixHex(accentColor, "#000000", resolvedTheme === "dark" ? 0.14 : 0.18);
+
+  state.appearance = {
+    ...state.appearance,
+    accentColor
+  };
+  state.resolvedTheme = resolvedTheme;
+
+  root.dataset.theme = resolvedTheme;
+  root.style.setProperty("--accent", accentColor);
+  root.style.setProperty("--accent-hover", hoverColor);
+  root.style.setProperty("--accent-subtle", rgbaFromHex(accentColor, resolvedTheme === "dark" ? 0.16 : 0.15));
+  root.style.setProperty("--accent-glow", rgbaFromHex(accentColor, resolvedTheme === "dark" ? 0.28 : 0.18));
+  root.style.setProperty("--border-focus", rgbaFromHex(accentColor, resolvedTheme === "dark" ? 0.44 : 0.32));
+  root.style.setProperty("--accent-contrast", getContrastColor(accentColor));
+}
+
+function renderAppearanceControls(): void {
+  refs.appearanceButton.classList.toggle("is-open", !refs.appearancePanel.classList.contains("hidden"));
+
+  for (const button of Array.from(refs.themeModeButtons.querySelectorAll<HTMLButtonElement>("[data-theme-mode]"))) {
+    const isActive = button.dataset.themeMode === state.appearance.themeMode;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  }
+
+  for (const button of Array.from(
+    refs.accentPresetButtons.querySelectorAll<HTMLButtonElement>("[data-accent-value]")
+  )) {
+    const isActive = normalizeHexColor(button.dataset.accentValue) === state.appearance.accentColor;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  }
+
+  refs.accentColorInput.value = state.appearance.accentColor;
+}
+
+function setAppearancePanelOpen(isOpen: boolean): void {
+  refs.appearancePanel.classList.toggle("hidden", !isOpen);
+  renderAppearanceControls();
+}
+
+function updateAppearance(partial: Partial<AppearanceSettings>): void {
+  state.appearance = {
+    ...state.appearance,
+    ...partial,
+    accentColor: normalizeHexColor(partial.accentColor ?? state.appearance.accentColor)
+  };
+  persistAppearanceSettings();
+  applyAppearance();
+  renderAppearanceControls();
 }
 
 /* ---- Flash ---- */
@@ -219,64 +302,11 @@ function updateCounts(): void {
 /* ---- Sidebar list ---- */
 
 function buildSidebarItems(): SidebarItem[] {
-  const items: SidebarItem[] = [];
-
-  for (const task of state.activeDownloads.values()) {
-    items.push({
-      id: task.id,
-      title: task.title,
-      format: task.format,
-      quality: task.quality,
-      status: task.status || "downloading",
-      thumbnail: "",
-      time: "",
-      type: "active",
-      path: ""
-    });
-  }
-
-  for (const entry of state.pendingDownloads) {
-    items.push({
-      id: entry.id,
-      title: entry.title,
-      format: entry.format,
-      quality: entry.quality,
-      status: "queued",
-      thumbnail: entry.thumbnail || "",
-      time: "",
-      type: "queued",
-      path: ""
-    });
-  }
-
-  for (const entry of state.history) {
-    items.push({
-      id: entry.id,
-      title: entry.title,
-      format: entry.format,
-      quality: entry.quality,
-      status: entry.status,
-      thumbnail: "",
-      time: timeAgo(entry.completedAt),
-      type: "history",
-      path: entry.outputPath || entry.savePath
-    });
-  }
-
-  return items;
+  return buildSidebarItemsPure(state.activeDownloads, state.pendingDownloads, state.history);
 }
 
 function filterByTab(items: SidebarItem[]): SidebarItem[] {
-  switch (state.activeTab) {
-    case "active":
-      return items.filter((i) => i.type === "active");
-    case "queued":
-      return items.filter((i) => i.type === "queued");
-    case "completed":
-      return items.filter((i) => i.status === "completed");
-    default:
-      return items;
-  }
+  return filterByTabPure(items, state.activeTab);
 }
 
 function renderSidebarList(): void {
@@ -394,10 +424,7 @@ function setActiveFormat(format: string): void {
 /* ---- Quality options ---- */
 
 function getQualityOptionsForFormat(format: string): QualityOption[] {
-  if (!state.metadata) return [{ value: "best", label: "Best available" }];
-  if (format === "mp3" || format === "wav") return state.metadata.availableAudioQualities;
-  const options = state.metadata.availableVideoQualities[format as "mp4" | "webm"] || [];
-  return options.length > 0 ? options : [{ value: "best", label: "Best available" }];
+  return getQualityOptionsForFormatPure(state.metadata, format);
 }
 
 function renderQualityOptions(): void {
@@ -782,6 +809,47 @@ async function handleClearHistory(): Promise<void> {
   renderHistory();
 }
 
+function handleAppearanceButtonClick(): void {
+  setAppearancePanelOpen(refs.appearancePanel.classList.contains("hidden"));
+}
+
+function handleThemeModeClick(event: Event): void {
+  const button = (event.target as HTMLElement).closest("[data-theme-mode]") as HTMLButtonElement | null;
+  if (!button?.dataset.themeMode) return;
+  updateAppearance({ themeMode: button.dataset.themeMode as ThemeMode });
+}
+
+function handleAccentPresetClick(event: Event): void {
+  const button = (event.target as HTMLElement).closest("[data-accent-value]") as HTMLButtonElement | null;
+  if (!button?.dataset.accentValue) return;
+  updateAppearance({ accentColor: button.dataset.accentValue });
+}
+
+function handleAccentInputChange(): void {
+  updateAppearance({ accentColor: refs.accentColorInput.value });
+}
+
+function handleDocumentClick(event: MouseEvent): void {
+  const target = event.target as Node | null;
+  if (!target) return;
+  if (refs.appearancePanel.contains(target) || refs.appearanceButton.contains(target)) {
+    return;
+  }
+  setAppearancePanelOpen(false);
+}
+
+function handleWindowKeyDown(event: KeyboardEvent): void {
+  if (event.key === "Escape") {
+    setAppearancePanelOpen(false);
+  }
+}
+
+function handleSystemThemeChange(): void {
+  if (state.appearance.themeMode === "auto") {
+    applyAppearance();
+  }
+}
+
 function handleTabClick(event: Event): void {
   const tab = (event.target as HTMLElement).closest("[data-tab]");
   if (!tab) return;
@@ -893,6 +961,11 @@ function wireRefs(): void {
   refs.queuedDownloads = document.getElementById("queuedDownloads")!;
   refs.startAllQueuedButton = document.getElementById("startAllQueuedButton") as HTMLButtonElement;
   refs.clearHistoryButton = document.getElementById("clearHistoryButton") as HTMLButtonElement;
+  refs.appearanceButton = document.getElementById("appearanceButton") as HTMLButtonElement;
+  refs.appearancePanel = document.getElementById("appearancePanel")!;
+  refs.themeModeButtons = document.getElementById("themeModeButtons")!;
+  refs.accentPresetButtons = document.getElementById("accentPresetButtons")!;
+  refs.accentColorInput = document.getElementById("accentColorInput") as HTMLInputElement;
   refs.sidebarList = document.getElementById("sidebarList")!;
   refs.sidebarNav = document.querySelector(".sidebar-nav")!;
   refs.ytdlpDot = document.getElementById("ytdlpDot")!;
@@ -908,6 +981,10 @@ function wireRefs(): void {
 
 async function boot(): Promise<void> {
   wireRefs();
+  state.appearance = loadAppearanceSettings();
+  systemThemeQuery = window.matchMedia("(prefers-color-scheme: dark)");
+  applyAppearance();
+  renderAppearanceControls();
   renderQualityOptions();
   syncDownloadButton();
 
@@ -923,6 +1000,13 @@ async function boot(): Promise<void> {
   refs.sidebarList.addEventListener("click", handleSidebarClick);
   refs.sidebarNav.addEventListener("click", handleTabClick);
   refs.clearHistoryButton.addEventListener("click", handleClearHistory);
+  refs.appearanceButton.addEventListener("click", handleAppearanceButtonClick);
+  refs.themeModeButtons.addEventListener("click", handleThemeModeClick);
+  refs.accentPresetButtons.addEventListener("click", handleAccentPresetClick);
+  refs.accentColorInput.addEventListener("input", handleAccentInputChange);
+  document.addEventListener("click", handleDocumentClick);
+  window.addEventListener("keydown", handleWindowKeyDown);
+  systemThemeQuery.addEventListener("change", handleSystemThemeChange);
 
   const bootstrap = await window.youtubeDownloader.getBootstrap();
   applyBootstrap(bootstrap);

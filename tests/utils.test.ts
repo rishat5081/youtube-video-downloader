@@ -42,6 +42,18 @@ describe("sanitizeFilename", () => {
   it("trims whitespace", () => {
     assert.equal(sanitizeFilename("  hello  "), "hello");
   });
+
+  it("removes control characters", () => {
+    assert.equal(sanitizeFilename("hello\x00world\x1f"), "hello world");
+  });
+
+  it("preserves Unicode characters", () => {
+    assert.equal(sanitizeFilename("日本語のタイトル"), "日本語のタイトル");
+  });
+
+  it("returns 'download' when all characters are forbidden", () => {
+    assert.equal(sanitizeFilename(':<>"/\\|?*'), "download");
+  });
 });
 
 /* ---- ensureExtension ---- */
@@ -65,6 +77,10 @@ describe("ensureExtension", () => {
 
   it("adds extension when different extension exists", () => {
     assert.equal(ensureExtension("/path/to/file.webm", "mp4"), "/path/to/file.webm.mp4");
+  });
+
+  it("handles filename with multiple dots", () => {
+    assert.equal(ensureExtension("/path/to/my.video.file.mp4", "mp4"), "/path/to/my.video.file.mp4");
   });
 });
 
@@ -189,6 +205,13 @@ describe("buildFormatArguments", () => {
     assert.ok(args.includes("wav"));
     assert.ok(args.includes("192"));
   });
+
+  it("builds mp3 with specific bitrate", () => {
+    const args = buildFormatArguments({ format: "mp3", quality: "128" });
+    assert.ok(args.includes("--audio-quality"));
+    assert.ok(args.includes("128"));
+    assert.ok(!args.includes("0"));
+  });
 });
 
 /* ---- parseProgressLine ---- */
@@ -219,6 +242,23 @@ describe("parseProgressLine", () => {
     const result = parseProgressLine(line);
     assert.equal(result!.status, "finished");
     assert.equal(result!.percent, 100);
+  });
+
+  it("handles NA values gracefully", () => {
+    const line = "download:downloading|0|NA|NA| 0.0%|NA|NA";
+    const result = parseProgressLine(line);
+    assert.ok(result);
+    assert.equal(result!.percent, 0);
+    assert.equal(result!.speed, 0);
+    assert.equal(result!.eta, 0);
+  });
+
+  it("handles large numbers", () => {
+    const line = "download:downloading|5368709120|10737418240|10737418240| 50.0%|104857600|50";
+    const result = parseProgressLine(line);
+    assert.equal(result!.downloadedBytes, 5368709120);
+    assert.equal(result!.totalBytes, 10737418240);
+    assert.equal(result!.speed, 104857600);
   });
 });
 
@@ -251,6 +291,25 @@ describe("buildMetadataPayload", () => {
     assert.equal(result.title, "Untitled video");
     assert.equal(result.uploader, "Unknown creator");
     assert.equal(result.duration, 0);
+  });
+
+  it("uses channel as uploader fallback", () => {
+    const result = buildMetadataPayload("https://url.com", { channel: "TestChannel" });
+    assert.equal(result.uploader, "TestChannel");
+  });
+
+  it("excludes formats with no vcodec from video qualities", () => {
+    const info = {
+      title: "Test",
+      formats: [
+        { vcodec: "none", height: 1080, ext: "mp4" },
+        { vcodec: "avc1", height: 720, ext: "mp4" }
+      ]
+    };
+    const result = buildMetadataPayload("https://url.com", info);
+    const mp4Qualities = result.availableVideoQualities.mp4;
+    assert.ok(!mp4Qualities.some((q) => q.value === "1080"));
+    assert.ok(mp4Qualities.some((q) => q.value === "720"));
   });
 });
 
@@ -351,5 +410,13 @@ describe("escapeHtml", () => {
   it("handles non-string input", () => {
     assert.equal(escapeHtml(123), "123");
     assert.equal(escapeHtml(null), "null");
+  });
+
+  it("handles undefined", () => {
+    assert.equal(escapeHtml(undefined), "undefined");
+  });
+
+  it("handles empty string", () => {
+    assert.equal(escapeHtml(""), "");
   });
 });

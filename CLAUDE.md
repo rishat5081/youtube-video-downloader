@@ -24,15 +24,19 @@ pnpm validate         # check + lint + format (CI gate)
 
 | File                     | Lines | Role                                                                        |
 | ------------------------ | ----- | --------------------------------------------------------------------------- |
-| `main.ts`                | ~310  | Electron main process: window, IPC handlers, yt-dlp spawning, history       |
-| `preload.ts`             | ~42   | contextBridge exposing `window.youtubeDownloader` (8 methods)               |
-| `lib/utils.ts`           | ~180  | Pure functions: format args, progress parsing, metadata, labels, escapeHtml |
-| `src/types.ts`           | ~130  | Shared TypeScript interfaces for IPC payloads, state, and API               |
-| `src/renderer.ts`        | ~700  | UI state management, DOM rendering, event handlers                          |
-| `src/index.html`         | ~362  | Three-zone layout: sidebar + workspace + status bar                         |
-| `src/styles.css`         | ~1277 | Dark theme, purple accent (#7c65f6), CSS custom properties                  |
-| `tests/utils.test.ts`    | ~356  | 52 assertions covering all 14 utils exports                                 |
-| `scripts/copy-static.js` | ~12   | Copies index.html + styles.css to dist/src/                                 |
+| `main.ts`                       | ~480  | Electron main process: window, IPC handlers, yt-dlp spawning, history       |
+| `preload.ts`                    | ~42   | contextBridge exposing `window.youtubeDownloader` (8 methods)               |
+| `lib/utils.ts`                  | ~195  | Pure functions: format args, progress parsing, metadata, labels, escapeHtml |
+| `lib/main-helpers.ts`           | ~75   | Extracted pure functions from main: automation config, splitLines, progress  |
+| `lib/renderer-helpers.ts`       | ~155  | Extracted pure functions from renderer: color, sidebar, quality, timeAgo    |
+| `src/types.ts`                  | ~159  | Shared TypeScript interfaces for IPC payloads, state, and API               |
+| `src/renderer.ts`               | ~890  | UI state management, DOM rendering, event handlers                          |
+| `src/index.html`                | ~362  | Three-zone layout: sidebar + workspace + status bar                         |
+| `src/styles.css`                | ~1277 | Dark theme, purple accent (#7c65f6), CSS custom properties                  |
+| `tests/utils.test.ts`           | ~380  | 64 assertions covering all 14 utils exports                                 |
+| `tests/main.test.ts`            | ~185  | 22 assertions: automation config, splitLines, buildProgressSnapshot          |
+| `tests/renderer-helpers.test.ts` | ~400  | 46 assertions: color, sidebar, quality, timeAgo, YouTube ID                  |
+| `scripts/copy-static.js`        | ~12   | Copies index.html + styles.css to dist/src/                                 |
 
 ## Architecture
 
@@ -117,9 +121,9 @@ to a browser-loaded script with no module system, so it can't import from lib/ut
 
 ## Testing
 
-Framework: `node:test` + `node:assert/strict` (zero deps). Tests in `tests/utils.test.ts`.
-Runner: `tsx` (esbuild-based, runs .ts files directly without pre-compilation).
-All 14 utils exports are tested. To add tests: write `describe`/`it` blocks in that file.
+Framework: `node:test` + `node:assert/strict` (zero deps). Runner: `tsx` (esbuild-based).
+Test files: `tests/utils.test.ts`, `tests/main.test.ts`, `tests/renderer-helpers.test.ts`.
+132 assertions across 29 test suites covering utils, main-helpers, and renderer-helpers.
 
 ## Automation Mode
 
@@ -134,7 +138,7 @@ AUTO_QUALITY="1080" AUTO_START="1" AUTOMATION_LOG="1" pnpm start
 
 ## Gotchas
 
-1. **Duplicated utils** — renderer.ts duplicates 5 functions from lib/utils.ts because the compiled renderer.js runs in browser context (loaded via `<script>` tag, no module system). Keep both copies in sync.
+1. **Duplicated utils** — renderer.ts duplicates 5 functions from lib/utils.ts (getDurationLabel, getFileSizeLabel, getSpeedLabel, getEtaLabel, escapeHtml) because lib/utils.ts imports Node's `path` module. Other pure functions are extracted into `lib/renderer-helpers.ts` and imported via ESM (`<script type="module">`).
 2. **Build before run** — `pnpm start` runs `pnpm build` first. The app loads from `dist/`, not source.
 3. **History cap** — `prependHistory` caps at 200 entries (`.slice(0, 200)`).
 4. **activeDownloads not shared** — main process and renderer each have their own `activeDownloads` Map. Main tracks child processes; renderer tracks UI state from events.

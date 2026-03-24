@@ -3,6 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-src 'none';"
+    />
     <title>YouTube Downloader</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
@@ -92,6 +96,19 @@
         <!-- Sidebar Footer -->
         <div class="sidebar-footer">
           <div class="sidebar-actions">
+            <button class="sidebar-action-btn" id="appearanceButton" title="Appearance">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M12 2v2" />
+                <path d="M12 20v2" />
+                <path d="m4.93 4.93 1.41 1.41" />
+                <path d="m17.66 17.66 1.41 1.41" />
+                <path d="M2 12h2" />
+                <path d="M20 12h2" />
+                <path d="m6.34 17.66-1.41 1.41" />
+                <path d="m19.07 4.93-1.41 1.41" />
+              </svg>
+            </button>
             <button class="sidebar-action-btn" id="clearHistoryButton" title="Clear history">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="3 6 5 6 21 6" />
@@ -108,6 +125,74 @@
               <span class="tool-dot" id="ffmpegDot"></span>
               ffmpeg
             </span>
+          </div>
+        </div>
+
+        <div id="appearancePanel" class="appearance-panel hidden">
+          <div class="appearance-header">
+            <div>
+              <h3>Appearance</h3>
+              <p>Follow your system theme or override it.</p>
+            </div>
+          </div>
+          <div class="appearance-section">
+            <span class="appearance-label">Theme</span>
+            <div id="themeModeButtons" class="appearance-segmented">
+              <button class="appearance-mode-btn" type="button" data-theme-mode="auto">Auto</button>
+              <button class="appearance-mode-btn" type="button" data-theme-mode="dark">Dark</button>
+              <button class="appearance-mode-btn" type="button" data-theme-mode="light">Light</button>
+            </div>
+          </div>
+          <div class="appearance-section">
+            <span class="appearance-label">Accent</span>
+            <div id="accentPresetButtons" class="accent-presets">
+              <button
+                class="accent-swatch"
+                type="button"
+                data-accent-value="#3b82f6"
+                style="--swatch: #3b82f6"
+                title="Blue"
+              ></button>
+              <button
+                class="accent-swatch"
+                type="button"
+                data-accent-value="#14b8a6"
+                style="--swatch: #14b8a6"
+                title="Teal"
+              ></button>
+              <button
+                class="accent-swatch"
+                type="button"
+                data-accent-value="#22c55e"
+                style="--swatch: #22c55e"
+                title="Green"
+              ></button>
+              <button
+                class="accent-swatch"
+                type="button"
+                data-accent-value="#eab308"
+                style="--swatch: #eab308"
+                title="Yellow"
+              ></button>
+              <button
+                class="accent-swatch"
+                type="button"
+                data-accent-value="#f97316"
+                style="--swatch: #f97316"
+                title="Orange"
+              ></button>
+              <button
+                class="accent-swatch"
+                type="button"
+                data-accent-value="#ef4444"
+                style="--swatch: #ef4444"
+                title="Red"
+              ></button>
+            </div>
+            <label class="accent-custom">
+              <span>Custom</span>
+              <input id="accentColorInput" type="color" value="#3b82f6" />
+            </label>
           </div>
         </div>
       </aside>

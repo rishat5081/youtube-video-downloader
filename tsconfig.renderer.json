@@ -6,6 +6,6 @@
     "outDir": "dist",
     "rootDir": "."
   },
-  "include": ["src/renderer.ts", "src/types.ts"],
+  "include": ["src/renderer.ts", "src/types.ts", "lib/renderer-helpers.ts"],
   "exclude": ["node_modules", "dist", "tests", "docs"]
 }
