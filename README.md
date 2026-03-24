@@ -140,14 +140,18 @@ youtube-video-downloader/
 ├── main.ts                          # Electron main process
 ├── preload.ts                       # Context bridge (secure IPC)
 ├── lib/
-│   └── utils.ts                     # Pure utility functions (testable)
+│   ├── utils.ts                     # Pure utility functions (format, parse, metadata)
+│   ├── main-helpers.ts              # Extracted main-process helpers (automation, progress)
+│   └── renderer-helpers.ts          # Extracted renderer helpers (color, sidebar, filtering)
 ├── src/
 │   ├── types.ts                     # Shared TypeScript interfaces
 │   ├── index.html                   # Application UI structure
-│   ├── styles.css                   # Dark theme with purple accent
+│   ├── styles.css                   # Dark theme with customizable accent
 │   └── renderer.ts                  # Renderer process (UI logic)
 ├── tests/
-│   └── utils.test.ts                # Unit tests (via tsx runner)
+│   ├── utils.test.ts                # Unit tests for lib/utils.ts
+│   ├── main.test.ts                 # Unit tests for lib/main-helpers.ts
+│   └── renderer-helpers.test.ts     # Unit tests for lib/renderer-helpers.ts
 ├── scripts/
 │   └── copy-static.js               # Copies HTML/CSS to dist/
 ├── application.start                # Cross-platform bootstrap + launch script
@@ -202,8 +206,10 @@ graph TB
             EH[Event Handlers]
         end
 
-        subgraph Lib["Shared Library (lib/utils.ts)"]
-            FN[Pure Utility Functions]
+        subgraph Lib["Shared Libraries (lib/)"]
+            FN[utils.ts — Format, Parse, Metadata]
+            MH[main-helpers.ts — Automation, Progress]
+            RH[renderer-helpers.ts — Color, Sidebar, Filtering]
         end
     end
 
@@ -345,12 +351,14 @@ graph LR
 
 ### Process Architecture
 
-| Process      | File           | Responsibilities                                                      |
-| ------------ | -------------- | --------------------------------------------------------------------- |
-| **Main**     | `main.ts`      | Window management, yt-dlp spawning, file dialogs, history persistence |
-| **Preload**  | `preload.ts`   | Secure IPC bridge via `contextBridge`                                 |
-| **Renderer** | `renderer.ts`  | UI rendering, state management, user interaction handling             |
-| **Library**  | `lib/utils.ts` | Pure utility functions shared across processes                        |
+| Process      | File                      | Responsibilities                                                      |
+| ------------ | ------------------------- | --------------------------------------------------------------------- |
+| **Main**     | `main.ts`                 | Window management, yt-dlp spawning, file dialogs, history persistence |
+| **Preload**  | `preload.ts`              | Secure IPC bridge via `contextBridge`                                 |
+| **Renderer** | `renderer.ts`             | UI rendering, state management, user interaction handling             |
+| **Library**  | `lib/utils.ts`            | Format args, progress parsing, metadata, labels, escapeHtml           |
+| **Library**  | `lib/main-helpers.ts`     | Automation config, line splitting, progress snapshots                 |
+| **Library**  | `lib/renderer-helpers.ts` | Color utilities, sidebar building, tab filtering, YouTube ID parsing  |
 
 ### Data Storage
 
@@ -368,7 +376,7 @@ graph LR
 | `./application.start` | Install toolchain, install deps, build, and launch |
 | `pnpm start`          | Build + launch the application                     |
 | `pnpm dev`            | Build + launch in development mode                 |
-| `pnpm test`           | Run unit tests (via tsx)                           |
+| `pnpm test`           | Run unit tests — 132 assertions across 29 suites   |
 | `pnpm test:coverage`  | Run tests with coverage report                     |
 | `pnpm lint`           | Run ESLint                                         |
 | `pnpm lint:fix`       | Run ESLint with auto-fix                           |

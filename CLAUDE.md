@@ -22,21 +22,21 @@ pnpm validate         # check + lint + format (CI gate)
 
 ## File Map
 
-| File                     | Lines | Role                                                                        |
-| ------------------------ | ----- | --------------------------------------------------------------------------- |
-| `main.ts`                       | ~480  | Electron main process: window, IPC handlers, yt-dlp spawning, history       |
-| `preload.ts`                    | ~42   | contextBridge exposing `window.youtubeDownloader` (8 methods)               |
-| `lib/utils.ts`                  | ~195  | Pure functions: format args, progress parsing, metadata, labels, escapeHtml |
-| `lib/main-helpers.ts`           | ~75   | Extracted pure functions from main: automation config, splitLines, progress  |
-| `lib/renderer-helpers.ts`       | ~155  | Extracted pure functions from renderer: color, sidebar, quality, timeAgo    |
-| `src/types.ts`                  | ~159  | Shared TypeScript interfaces for IPC payloads, state, and API               |
-| `src/renderer.ts`               | ~890  | UI state management, DOM rendering, event handlers                          |
-| `src/index.html`                | ~362  | Three-zone layout: sidebar + workspace + status bar                         |
-| `src/styles.css`                | ~1277 | Dark theme, purple accent (#7c65f6), CSS custom properties                  |
-| `tests/utils.test.ts`           | ~380  | 64 assertions covering all 14 utils exports                                 |
-| `tests/main.test.ts`            | ~185  | 22 assertions: automation config, splitLines, buildProgressSnapshot          |
-| `tests/renderer-helpers.test.ts` | ~400  | 46 assertions: color, sidebar, quality, timeAgo, YouTube ID                  |
-| `scripts/copy-static.js`        | ~12   | Copies index.html + styles.css to dist/src/                                 |
+| File                             | Lines | Role                                                                        |
+| -------------------------------- | ----- | --------------------------------------------------------------------------- |
+| `main.ts`                        | ~480  | Electron main process: window, IPC handlers, yt-dlp spawning, history       |
+| `preload.ts`                     | ~42   | contextBridge exposing `window.youtubeDownloader` (8 methods)               |
+| `lib/utils.ts`                   | ~195  | Pure functions: format args, progress parsing, metadata, labels, escapeHtml |
+| `lib/main-helpers.ts`            | ~75   | Extracted pure functions from main: automation config, splitLines, progress |
+| `lib/renderer-helpers.ts`        | ~155  | Extracted pure functions from renderer: color, sidebar, quality, timeAgo    |
+| `src/types.ts`                   | ~159  | Shared TypeScript interfaces for IPC payloads, state, and API               |
+| `src/renderer.ts`                | ~890  | UI state management, DOM rendering, event handlers                          |
+| `src/index.html`                 | ~362  | Three-zone layout: sidebar + workspace + status bar                         |
+| `src/styles.css`                 | ~1277 | Dark theme, purple accent (#7c65f6), CSS custom properties                  |
+| `tests/utils.test.ts`            | ~380  | 64 assertions covering all 14 utils exports                                 |
+| `tests/main.test.ts`             | ~185  | 22 assertions: automation config, splitLines, buildProgressSnapshot         |
+| `tests/renderer-helpers.test.ts` | ~400  | 46 assertions: color, sidebar, quality, timeAgo, YouTube ID                 |
+| `scripts/copy-static.js`         | ~12   | Copies index.html + styles.css to dist/src/                                 |
 
 ## Architecture
 
