@@ -1,16 +1,16 @@
-# Contributing to YouTube Video Downloader
+# 🤝 Contributing to YouTube Video Downloader
 
 Thank you for your interest in contributing! This guide will help you get started.
 
-## Development Setup
+## 🛠️ Development Setup
 
-### Prerequisites
+### 📋 Prerequisites
 
 - **Node.js** 20+
 - **pnpm** (installed automatically via corepack)
 - **yt-dlp** and **ffmpeg** in your PATH
 
-### Getting Started
+### ⚡ Getting Started
 
 ```bash
 # Clone the repo
@@ -21,9 +21,9 @@ cd youtube-video-downloader
 ./application.start
 ```
 
-## Development Workflow
+## 🔄 Development Workflow
 
-### Branch Naming
+### 🌿 Branch Naming
 
 Use descriptive branch names with a prefix:
 
@@ -34,7 +34,7 @@ Use descriptive branch names with a prefix:
 - `ci/` — CI/CD changes
 - `test/` — Test additions or fixes
 
-### Commit Messages
+### 💬 Commit Messages
 
 We follow [Conventional Commits](https://www.conventionalcommits.org/):
 
@@ -47,16 +47,16 @@ refactor: extract utility functions to lib/utils.js
 ci: add dependency review workflow
 ```
 
-### Pull Request Process
+### 🚀 Pull Request Process
 
-1. Fork the repository and create your branch from `main`
-2. Make your changes
-3. Run all checks: `pnpm validate`
-4. Run tests: `pnpm test`
-5. Push your branch and open a Pull Request
-6. Fill out the PR template completely
+1. 🍴 Fork the repository and create your branch from `main`
+2. ✏️ Make your changes
+3. ✅ Run all checks: `pnpm validate`
+4. 🧪 Run tests: `pnpm test`
+5. 📤 Push your branch and open a Pull Request
+6. 📝 Fill out the PR template completely
 
-## Available Scripts
+## ⌨️ Available Scripts
 
 | Script                | Description                                |
 | --------------------- | ------------------------------------------ |
@@ -73,7 +73,7 @@ ci: add dependency review workflow
 | `pnpm check`          | Type-check all TypeScript (tsc --noEmit)   |
 | `pnpm validate`       | Run all checks (typecheck + lint + format) |
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 youtube-video-downloader/
@@ -101,7 +101,7 @@ youtube-video-downloader/
     └── workflows/       # CI/CD pipelines
 ```
 
-## Code Style
+## 🎨 Code Style
 
 - **TypeScript** with `strict: true` — all code is type-checked
 - **ESLint** with `typescript-eslint` for linting (flat config, ES2024)
@@ -111,7 +111,7 @@ youtube-video-downloader/
 - All HTML output must use `escapeHtml()` to prevent XSS
 - Add types to all function parameters and return values
 
-## Testing
+## 🧪 Testing
 
 We use Node.js built-in test runner (`node:test`) with `tsx` to run TypeScript directly. Tests are in `tests/`:
 
@@ -125,13 +125,13 @@ pnpm test:coverage
 
 When adding new utility functions to `lib/utils.ts`, add corresponding tests in `tests/utils.test.ts`.
 
-## Security
+## 🔒 Security
 
 - Never disable context isolation or enable node integration
 - Always escape user content before inserting into HTML
 - Validate all IPC payloads in the main process
 - See [SECURITY.md](.github/SECURITY.md) for our security policy
 
-## Questions?
+## ❓ Questions?
 
 Open a [Discussion](https://github.com/rishat5081/youtube-video-downloader/discussions) or check existing issues.
