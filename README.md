@@ -1,29 +1,32 @@
-# YouTube Video Downloader
+<p align="center">
+  <img src="https://img.shields.io/badge/Electron-30+-47848F?style=for-the-badge&logo=electron&logoColor=white" />
+  <img src="https://img.shields.io/badge/TypeScript-strict-blue?style=for-the-badge&logo=typescript" />
+  <img src="https://img.shields.io/badge/yt--dlp-Powered-FF0000?style=for-the-badge&logo=youtube" />
+  <img src="https://img.shields.io/badge/Platform-macOS%20%7C%20Win%20%7C%20Linux-blue?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Node.js-20+-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" />
+  <img src="https://img.shields.io/github/actions/workflow/status/rishat5081/youtube-video-downloader/ci.yml?style=for-the-badge&label=CI" />
+</p>
 
-A professional, cross-platform desktop application for downloading YouTube videos and audio. Built with **Electron** and **yt-dlp**, featuring a competitor-level dark UI inspired by FDM, IDM, and 4K Video Downloader — with real-time progress tracking, download queue management, and persistent history.
-
-[![CI](https://github.com/rishat5081/youtube-video-downloader/actions/workflows/ci.yml/badge.svg)](https://github.com/rishat5081/youtube-video-downloader/actions/workflows/ci.yml)
-[![Code Quality](https://github.com/rishat5081/youtube-video-downloader/actions/workflows/code-quality.yml/badge.svg)](https://github.com/rishat5081/youtube-video-downloader/actions/workflows/code-quality.yml)
-![Electron](https://img.shields.io/badge/Electron-30+-47848F?logo=electron&logoColor=white)
-![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Windows%20%7C%20Linux-blue)
-![Node](https://img.shields.io/badge/Node.js-20+-339933?logo=nodedotjs&logoColor=white)
-![pnpm](https://img.shields.io/badge/pnpm-10+-F69220?logo=pnpm&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-green)
+<h1 align="center">📺 YouTube Video Downloader</h1>
+<p align="center"><strong>Professional Cross-Platform Desktop YouTube Downloader</strong></p>
+<p align="center">
+  A professional, cross-platform desktop application for downloading YouTube videos and audio. Built with <b>Electron</b> and <b>yt-dlp</b>, featuring a competitor-level dark UI inspired by FDM, IDM, and 4K Video Downloader — with real-time progress tracking, download queue management, and persistent history.
+</p>
 
 ---
 
-## Features
+## ✨ Features
 
-| Category            | Features                                                                                       |
-| ------------------- | ---------------------------------------------------------------------------------------------- |
-| **Download Engine** | Multi-format (MP4, WEBM, MP3, WAV), quality selection, real-time progress with speed & ETA     |
-| **Queue System**    | Batch queue, start all, individual start/remove, concurrent downloads                          |
-| **Smart UI**        | Three-zone layout, format toggle chips, clipboard paste, sidebar navigation with status tabs   |
-| **History**         | Persistent across sessions, filterable by status (All/Active/Queue/Completed), max 200 entries |
-| **Automation**      | Environment variable support for scripting and CI/CD pipelines                                 |
-| **Security**        | Context isolation, no node integration, XSS-escaped output, local files only                   |
+| | Category            | Features                                                                                       |
+|---|------------------- | ---------------------------------------------------------------------------------------------- |
+| ⬇️ | **Download Engine** | Multi-format (MP4, WEBM, MP3, WAV), quality selection, real-time progress with speed & ETA     |
+| 📦 | **Queue System**    | Batch queue, start all, individual start/remove, concurrent downloads                          |
+| 🎨 | **Smart UI**        | Three-zone layout, format toggle chips, clipboard paste, sidebar navigation with status tabs   |
+| 📜 | **History**         | Persistent across sessions, filterable by status (All/Active/Queue/Completed), max 200 entries |
+| 🤖 | **Automation**      | Environment variable support for scripting and CI/CD pipelines                                 |
+| 🔒 | **Security**        | Context isolation, no node integration, XSS-escaped output, local files only                   |
 
-## UI Design
+## 🎨 UI Design
 
 The interface follows a **three-zone layout** inspired by professional download managers:
 
@@ -31,7 +34,7 @@ The interface follows a **three-zone layout** inspired by professional download 
 - **Action Bar** — URL input with clipboard paste button and Analyze trigger
 - **Main Content** — Video preview card with format chips, quality selector, download/queue actions, active download progress cards
 
-### Color System
+### 🎨 Color System
 
 | Element      | Color                             | Usage                                                 |
 | ------------ | --------------------------------- | ----------------------------------------------------- |
@@ -41,7 +44,7 @@ The interface follows a **three-zone layout** inspired by professional download 
 | **Elevated** | `#1a1a22`                         | Inputs, chips, hover states                           |
 | **Text**     | `#f0f0f4` / `#9d9db0` / `#5c5c70` | Primary / Secondary / Muted                           |
 
-## Prerequisites
+## 📋 Prerequisites
 
 | Tool        | Version | Purpose                | Install                                               |
 | ----------- | ------- | ---------------------- | ----------------------------------------------------- |
@@ -50,7 +53,7 @@ The interface follows a **three-zone layout** inspired by professional download 
 | **yt-dlp**  | Latest  | Video extraction       | [github.com/yt-dlp](https://github.com/yt-dlp/yt-dlp) |
 | **ffmpeg**  | Latest  | Audio/video processing | [ffmpeg.org](https://ffmpeg.org)                      |
 
-### One-Command Setup
+### ⚡ One-Command Setup
 
 The repository includes a cross-platform bootstrap launcher:
 
@@ -69,7 +72,7 @@ What it does:
 
 As of March 20, 2026, the latest official Node.js current release detected from the Node.js release index is `25.8.1`.
 
-### Manual Quick Install
+### 🔧 Manual Quick Install
 
 ```bash
 # macOS
@@ -86,7 +89,7 @@ sudo apt install ffmpeg && pip install yt-dlp
 sudo pacman -S yt-dlp ffmpeg
 ```
 
-## Installation
+## 📥 Installation
 
 ```bash
 # Clone the repository
@@ -97,23 +100,23 @@ cd youtube-video-downloader
 ./application.start
 ```
 
-## Usage
+## 🚀 Usage
 
-### Basic Workflow
+### 📝 Basic Workflow
 
-1. **Paste URL** — Paste a YouTube URL into the action bar (or click the clipboard button)
-2. **Analyze** — Hit Enter or click Analyze to fetch video metadata
-3. **Choose Format** — Click format chips: MP4, WEBM, MP3, or WAV
-4. **Select Quality** — Pick resolution or audio bitrate from the dropdown
-5. **Download** — Click "Download Now" or "Add to Queue" for batch processing
+1. 📋 **Paste URL** — Paste a YouTube URL into the action bar (or click the clipboard button)
+2. 🔍 **Analyze** — Hit Enter or click Analyze to fetch video metadata
+3. 🎬 **Choose Format** — Click format chips: MP4, WEBM, MP3, or WAV
+4. ⚙️ **Select Quality** — Pick resolution or audio bitrate from the dropdown
+5. ⬇️ **Download** — Click "Download Now" or "Add to Queue" for batch processing
 
-### Queue Management
+### 📦 Queue Management
 
 - **Add to Queue** — Configure and click "Add to Queue" to batch items
 - **Start All** — Launch all queued downloads concurrently
 - **Sidebar Tabs** — Filter by All, Active, Queue, or Completed
 
-### Automation
+### 🤖 Automation
 
 ```bash
 AUTO_URL="https://www.youtube.com/watch?v=..." \
@@ -133,7 +136,7 @@ pnpm start
 | `AUTO_START`     | Auto-start download (`1` = yes)              | `0`     |
 | `AUTOMATION_LOG` | Log events to stdout (`1` = yes)             | `0`     |
 
-## Architecture
+## 🏗️ Architecture
 
 ```
 youtube-video-downloader/
@@ -183,7 +186,7 @@ youtube-video-downloader/
 └── .npmrc                           # npm/pnpm configuration
 ```
 
-### Application Architecture
+### 🔧 Application Architecture
 
 ```mermaid
 graph TB
@@ -247,7 +250,7 @@ graph TB
     style Web fill:#131318,stroke:#5c5c70,color:#f0f0f4
 ```
 
-### Download Flow
+### ⬇️ Download Flow
 
 ```mermaid
 sequenceDiagram
@@ -287,7 +290,7 @@ sequenceDiagram
     R-->>User: Show completion
 ```
 
-### UI Layout
+### 🖥️ UI Layout
 
 ```mermaid
 graph LR
@@ -322,7 +325,7 @@ graph LR
     style StatusBar fill:#131318,stroke:#5c5c70,color:#f0f0f4
 ```
 
-### IPC Communication
+### 🔗 IPC Communication
 
 ```mermaid
 graph LR
@@ -349,7 +352,7 @@ graph LR
     style Main fill:#1c1c28,stroke:#7c65f6,color:#f0f0f4
 ```
 
-### Process Architecture
+### ⚙️ Process Architecture
 
 | Process      | File                      | Responsibilities                                                      |
 | ------------ | ------------------------- | --------------------------------------------------------------------- |
@@ -360,7 +363,7 @@ graph LR
 | **Library**  | `lib/main-helpers.ts`     | Automation config, line splitting, progress snapshots                 |
 | **Library**  | `lib/renderer-helpers.ts` | Color utilities, sidebar building, tab filtering, YouTube ID parsing  |
 
-### Data Storage
+### 💾 Data Storage
 
 - **Download History**: Stored as JSON in Electron's `userData` directory
   - macOS: `~/Library/Application Support/youtube-downloader-electron/download-history.json`
@@ -368,7 +371,7 @@ graph LR
   - Linux: `~/.config/youtube-downloader-electron/download-history.json`
 - Maximum **200** history entries (oldest entries are automatically pruned)
 
-## Scripts
+## ⌨️ Scripts
 
 | Script                | Description                                        |
 | --------------------- | -------------------------------------------------- |
@@ -385,7 +388,7 @@ graph LR
 | `pnpm check`          | Type-check all TypeScript (tsc --noEmit)           |
 | `pnpm validate`       | Run all checks (typecheck + lint + format)         |
 
-## Tech Stack
+## 🛠️ Tech Stack
 
 | Technology                                                        | Purpose                            |
 | ----------------------------------------------------------------- | ---------------------------------- |
@@ -400,7 +403,7 @@ graph LR
 | [GitHub Actions](https://github.com/features/actions)             | CI/CD pipelines                    |
 | [Dependabot](https://docs.github.com/en/code-security/dependabot) | Automated dependency updates       |
 
-## CI/CD Pipelines
+## 🏗️ CI/CD Pipelines
 
 | Workflow              | Trigger             | Jobs                                                               |
 | --------------------- | ------------------- | ------------------------------------------------------------------ |
@@ -411,7 +414,7 @@ graph LR
 | **Release**           | Tag `v*`            | Validate → Create GitHub Release with auto-generated notes         |
 | **Stale**             | Daily cron          | Auto-close stale issues and PRs (30 days inactive)                 |
 
-## Supported Formats
+## 🎬 Supported Formats
 
 | Format | Type  | Codec        | Description                  |
 | ------ | ----- | ------------ | ---------------------------- |
@@ -420,7 +423,7 @@ graph LR
 | MP3    | Audio | MPEG Layer 3 | Universal audio format       |
 | WAV    | Audio | PCM          | Uncompressed lossless audio  |
 
-## Security
+## 🔒 Security
 
 - **Context Isolation**: Enabled — renderer cannot access Node.js APIs directly
 - **Node Integration**: Disabled — all IPC goes through the preload bridge
@@ -431,7 +434,7 @@ graph LR
 
 See [SECURITY.md](.github/SECURITY.md) for our vulnerability disclosure policy.
 
-## Troubleshooting
+## 🔧 Troubleshooting
 
 | Issue                           | Solution                                                                           |
 | ------------------------------- | ---------------------------------------------------------------------------------- |
@@ -441,7 +444,7 @@ See [SECURITY.md](.github/SECURITY.md) for our vulnerability disclosure policy.
 | Video quality not available     | Some videos have limited formats — select "Best available"                         |
 | App won't start                 | Check Node.js version: `node --version` (needs 20+)                                |
 
-## Contributing
+## 🤝 Contributing
 
 We welcome contributions! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
 
@@ -451,14 +454,15 @@ We welcome contributions! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for gui
 - Pull request process
 - Code style and testing
 
-## License
+## 📄 License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
-## Author
-
-**Rishat** — [GitHub](https://github.com/rishat5081)
-
 ---
 
-Built with Electron + yt-dlp
+<p align="center">
+  Built with ⚡ Electron &nbsp;·&nbsp; 📺 yt-dlp &nbsp;·&nbsp; 🔷 TypeScript
+</p>
+<p align="center">
+  <sub>Made by <a href="https://github.com/rishat5081">@rishat5081</a></sub>
+</p>
