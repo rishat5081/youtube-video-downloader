@@ -5,3 +5,10 @@ downloads/
 npm-debug.log*
 *.log
 .env
+
+# Ruflo orchestration
+.claude/flows/
+.agents/.cache/
+claude-flow.cache/
+*.flow.log
+.ruflo-session/

@@ -342,3 +342,36 @@ Both `AUTO_URL` and `AUTO_SAVE_PATH` must be set for automation to activate.
 6. **No persistent renderer state** — queue (`pendingDownloads`) is lost on window refresh/restart.
 7. **History file growth** — capped at 200 entries but no cleanup of orphaned file references.
 8. **renderer.ts is a single file** — all UI logic in one ~700-line file; no component splitting.
+
+## Specialized Agents
+
+This project includes 14 specialized AI agent definitions in `.claude/agents/`. Each agent has deep project-specific context and enforces best practices for its domain.
+
+| Agent | Path | Purpose |
+|-------|------|---------|
+| project-owner | `.claude/agents/project-owner/` | Audits and updates all agents when the project changes |
+| coder | `.claude/agents/coder/` | Feature development across main/preload/renderer |
+| security-auditor | `.claude/agents/security-auditor/` | XSS, shell injection, Electron hardening |
+| performance | `.claude/agents/performance/` | Download speed, DOM optimization, memory |
+| standards-enforcer | `.claude/agents/standards-enforcer/` | TypeScript strict, ESLint, Prettier |
+| reviewer | `.claude/agents/reviewer/` | IPC contract safety, breaking changes |
+| tester | `.claude/agents/tester/` | node:test framework, 132 assertions |
+| architect | `.claude/agents/architect/` | System design, module boundaries |
+| devops | `.claude/agents/devops/` | CI/CD workflows, release process |
+| code-analyzer | `.claude/agents/code-analyzer/` | Complexity metrics, duplication, tech debt |
+| planner | `.claude/agents/planner/` | Task decomposition across Electron layers |
+| production-validator | `.claude/agents/production-validator/` | No TODOs/debug, Electron security check |
+| release-manager | `.claude/agents/release-manager/` | Semver, changelog, Electron releases |
+| issue-tracker | `.claude/agents/issue-tracker/` | GitHub labels, triage rules |
+
+### Agent Usage
+
+Each agent is defined as a Markdown file at `.claude/agents/<name>/<name>.md`. They are used by the Claude-Flow orchestration system defined in `claude-flow.config.json`.
+
+**Task routing** automatically assigns work to agents based on patterns:
+- Bug fixes → `coder` (primary) + `tester` (verification)
+- New features → `architect` (design) → `coder` (implement) → `tester` (test) → `reviewer` (review)
+- Security concerns → `security-auditor`
+- Performance issues → `performance`
+- Releases → `release-manager` + `production-validator`
+- CI/CD changes → `devops`

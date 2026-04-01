@@ -136,6 +136,27 @@ AUTO_QUALITY="1080" AUTO_START="1" AUTOMATION_LOG="1" pnpm start
 
 `AUTOMATION_LOG=1` prints `AUTOMATION_EVENT {json}` to stdout for each download event.
 
+## Specialized Agents
+
+This project includes 14 specialized AI agent definitions in `.claude/agents/`. Each agent has deep project-specific context and enforces best practices for its domain.
+
+| Agent | Path | Purpose |
+|-------|------|---------|
+| project-owner | `.claude/agents/project-owner/` | Audits and updates all agents when the project changes |
+| coder | `.claude/agents/coder/` | Feature development across main/preload/renderer |
+| security-auditor | `.claude/agents/security-auditor/` | XSS, shell injection, Electron hardening |
+| performance | `.claude/agents/performance/` | Download speed, DOM optimization, memory |
+| standards-enforcer | `.claude/agents/standards-enforcer/` | TypeScript strict, ESLint, Prettier |
+| reviewer | `.claude/agents/reviewer/` | IPC contract safety, breaking changes |
+| tester | `.claude/agents/tester/` | node:test framework, 132 assertions |
+| architect | `.claude/agents/architect/` | System design, module boundaries |
+| devops | `.claude/agents/devops/` | CI/CD workflows, release process |
+| code-analyzer | `.claude/agents/code-analyzer/` | Complexity metrics, duplication, tech debt |
+| planner | `.claude/agents/planner/` | Task decomposition across Electron layers |
+| production-validator | `.claude/agents/production-validator/` | No TODOs/debug, Electron security check |
+| release-manager | `.claude/agents/release-manager/` | Semver, changelog, Electron releases |
+| issue-tracker | `.claude/agents/issue-tracker/` | GitHub labels, triage rules |
+
 ## Gotchas
 
 1. **Duplicated utils** — renderer.ts duplicates 5 functions from lib/utils.ts (getDurationLabel, getFileSizeLabel, getSpeedLabel, getEtaLabel, escapeHtml) because lib/utils.ts imports Node's `path` module. Other pure functions are extracted into `lib/renderer-helpers.ts` and imported via ESM (`<script type="module">`).
